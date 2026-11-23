@@ -7,11 +7,13 @@ import com.leksin.backend.entity.toParentResponse
 import com.leksin.backend.exception.DuplicateUsernameException
 import com.leksin.backend.exception.ParentNotFoundException
 import com.leksin.backend.repository.ParentRepository
+import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 
 @Service
 class ParentService(
     private val parentRepository: ParentRepository,
+    private val passwordEncoder: PasswordEncoder,
 ) {
     fun register(request: ParentRegisterRequest): ParentResponse {
         if (parentRepository.existsByUsername(request.username)) {
@@ -20,7 +22,7 @@ class ParentService(
 
         val parent = Parent(
             username = request.username,
-            password = request.password,
+            password = passwordEncoder.encode(request.password),
             email = request.email,
         )
         val savedParent = parentRepository.save(parent)

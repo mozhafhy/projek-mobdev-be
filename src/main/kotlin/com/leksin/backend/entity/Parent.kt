@@ -20,7 +20,7 @@ class Parent (
     var username: String,
 
     @Column(nullable = false, length = 255)
-    var password: String,
+    var password: String?,
 
     @Column(nullable = false, length = 255)
     var email: String,
