@@ -1,10 +1,12 @@
 package com.leksin.backend.service
 
+import com.leksin.backend.dto.ParentLoginRequest
 import com.leksin.backend.dto.ParentRegisterRequest
 import com.leksin.backend.dto.ParentResponse
 import com.leksin.backend.entity.Parent
 import com.leksin.backend.entity.toParentResponse
 import com.leksin.backend.exception.DuplicateUsernameException
+import com.leksin.backend.exception.InvalidCredentialException
 import com.leksin.backend.exception.ParentNotFoundException
 import com.leksin.backend.repository.ParentRepository
 import org.springframework.security.crypto.password.PasswordEncoder
@@ -28,6 +30,20 @@ class ParentService(
         val savedParent = parentRepository.save(parent)
 
         return savedParent.toParentResponse()
+    }
+
+    fun login(request: ParentLoginRequest): ParentResponse {
+        val parent = parentRepository.findByUsername(request.username)
+            ?: throw InvalidCredentialException("Invalid username or password")
+
+        if (!passwordEncoder.matches(
+                request.password, parent.password
+            )
+        ) {
+            throw InvalidCredentialException("Invalid username or password")
+        }
+
+        return parent.toParentResponse()
     }
 
     fun findByUsername(username: String): ParentResponse {

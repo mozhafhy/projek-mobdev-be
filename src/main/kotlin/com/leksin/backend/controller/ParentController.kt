@@ -1,5 +1,6 @@
 package com.leksin.backend.controller
 
+import com.leksin.backend.dto.ParentLoginRequest
 import com.leksin.backend.dto.ParentRegisterRequest
 import com.leksin.backend.dto.ParentResponse
 import com.leksin.backend.service.ParentService
@@ -28,6 +29,15 @@ class ParentController(
     ): ResponseEntity<ParentResponse> {
         val result = parentService.register(request)
         return ResponseEntity.created(URI("/${result.id}")).body(result)
+    }
+
+    @PostMapping("/login")
+    fun login(
+        @Valid @RequestBody request: ParentLoginRequest,
+    ): ResponseEntity<ParentResponse> {
+        val result = parentService.login(request)
+
+        return ResponseEntity.ok(result)
     }
 
     @GetMapping("/{username}")

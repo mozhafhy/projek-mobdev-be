@@ -17,6 +17,7 @@ class GlobalExceptionHandler {
         val status = when (e) {
             is DuplicateUsernameException -> HttpStatus.CONFLICT
             is ParentNotFoundException -> HttpStatus.NOT_FOUND
+            is InvalidCredentialException -> HttpStatus.UNAUTHORIZED
         }
 
         return ProblemDetail.forStatusAndDetail(
