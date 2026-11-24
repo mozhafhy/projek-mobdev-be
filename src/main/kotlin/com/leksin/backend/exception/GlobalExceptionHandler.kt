@@ -18,6 +18,7 @@ class GlobalExceptionHandler {
             is DuplicateUsernameException -> HttpStatus.CONFLICT
             is ParentNotFoundException -> HttpStatus.NOT_FOUND
             is InvalidCredentialException -> HttpStatus.UNAUTHORIZED
+            is ChildNotFoundException -> HttpStatus.NOT_FOUND
         }
 
         return ProblemDetail.forStatusAndDetail(
