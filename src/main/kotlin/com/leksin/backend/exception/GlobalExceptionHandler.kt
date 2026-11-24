@@ -57,4 +57,17 @@ class GlobalExceptionHandler {
             setProperty("timestamp", Instant.now())
         }
     }
+
+    @ExceptionHandler(IllegalArgumentException::class)
+    fun handleIllegalArgumentException(
+        e: IllegalArgumentException,
+    ): ProblemDetail {
+        return ProblemDetail.forStatusAndDetail(
+            HttpStatus.BAD_REQUEST,
+            e.message ?: "Invalid request",
+        ).apply {
+            title = "Invalid Request"
+            setProperty("timestamp", Instant.now())
+        }
+    }
 }
