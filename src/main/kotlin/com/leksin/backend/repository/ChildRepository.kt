@@ -11,4 +11,9 @@ interface ChildRepository : JpaRepository<Children, UUID> {
         childId: UUID,
         parentId: UUID,
     ): Children?
+
+    fun findByNicknameAndParentUsername(
+        nickname: String,
+        parentUsername: String,
+    ): Children?
 }

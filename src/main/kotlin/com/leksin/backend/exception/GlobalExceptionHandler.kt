@@ -19,6 +19,7 @@ class GlobalExceptionHandler {
             is ParentNotFoundException -> HttpStatus.NOT_FOUND
             is InvalidCredentialException -> HttpStatus.UNAUTHORIZED
             is ChildNotFoundException -> HttpStatus.NOT_FOUND
+            is InvalidOtpException -> HttpStatus.UNAUTHORIZED
         }
 
         return ProblemDetail.forStatusAndDetail(
