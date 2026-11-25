@@ -21,4 +21,10 @@ interface ChildRepository : JpaRepository<Children, UUID> {
         nickname: String,
         parentUsername: String,
     ): Boolean
+
+    fun existsByNicknameAndParentIdAndIdNot(
+        nickname: String,
+        parentId: UUID,
+        childId: UUID,
+    ): Boolean
 }

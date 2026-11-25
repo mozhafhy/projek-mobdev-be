@@ -1,22 +1,22 @@
 package com.leksin.backend.controller
 
 import com.leksin.backend.dto.request.ChildCreateRequest
+import com.leksin.backend.dto.request.ChildProfileUpdateRequest
 import com.leksin.backend.dto.response.ChildResponse
-import com.leksin.backend.security.ResourceAuthorizationService
 import com.leksin.backend.security.TokenPrincipal
 import com.leksin.backend.service.ChildService
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
-import org.springframework.security.core.Authentication
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.*
 import java.util.*
 
 @RestController
 @RequestMapping("/api/parent/children")
+@PreAuthorize("hasRole('PARENT')")
 class ChildController(
     private val childService: ChildService,
-    private val authorizationService: ResourceAuthorizationService,
 ) {
 
     @PostMapping
@@ -24,18 +24,14 @@ class ChildController(
     fun create(
         @AuthenticationPrincipal principal: TokenPrincipal,
         @Valid @RequestBody request: ChildCreateRequest,
-        authentication: Authentication,
     ): ChildResponse {
-        authorizationService.requireParentAccess(principal.userId, authentication)
         return childService.create(principal.userId, request)
     }
 
     @GetMapping
     fun findAll(
         @AuthenticationPrincipal principal: TokenPrincipal,
-        authentication: Authentication,
     ): List<ChildResponse> {
-        authorizationService.requireParentAccess(principal.userId, authentication)
         return childService.findAll(principal.userId)
     }
 
@@ -44,14 +40,20 @@ class ChildController(
     fun delete(
         @AuthenticationPrincipal principal: TokenPrincipal,
         @PathVariable childId: UUID,
-        authentication: Authentication,
     ) {
-        val parentId = principal.userId
-        authorizationService.requireParentAccess(
-            parentId,
-            authentication
-        )
+        childService.delete(principal.userId, childId)
+    }
 
-        childService.delete(parentId, childId)
+    @PutMapping("/{childId}")
+    fun updateProfile(
+        @AuthenticationPrincipal principal: TokenPrincipal,
+        @PathVariable childId: UUID,
+        @Valid @RequestBody request: ChildProfileUpdateRequest,
+    ): ChildResponse {
+        return childService.updateProfile(
+            parentId = principal.userId,
+            childId = childId,
+            request = request,
+        )
     }
 }

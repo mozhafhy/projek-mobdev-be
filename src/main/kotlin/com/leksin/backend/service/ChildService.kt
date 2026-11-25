@@ -1,6 +1,7 @@
 package com.leksin.backend.service
 
 import com.leksin.backend.dto.request.ChildCreateRequest
+import com.leksin.backend.dto.request.ChildProfileUpdateRequest
 import com.leksin.backend.dto.response.ChildResponse
 import com.leksin.backend.entity.Children
 import com.leksin.backend.entity.toChildResponse
@@ -51,5 +52,32 @@ class ChildService(
         val child = childRepository.findByIdAndParentId(childId, parentId)
             ?: throw ChildNotFoundException()
         childRepository.delete(child)
+    }
+
+    @Transactional
+    fun updateProfile(
+        parentId: UUID,
+        childId: UUID,
+        request: ChildProfileUpdateRequest,
+    ): ChildResponse {
+        val child = childRepository.findByIdAndParentId(
+            childId = childId,
+            parentId = parentId,
+        ) ?: throw ChildNotFoundException()
+
+        val nicknameExists =
+            childRepository.existsByNicknameAndParentIdAndIdNot(
+                nickname = request.nickname,
+                parentId = parentId,
+                childId = childId,
+            )
+
+        if (nicknameExists) {
+            throw DuplicateChildNicknameException()
+        }
+
+        child.nickname = request.nickname
+
+        return childRepository.save(child).toChildResponse()
     }
 }
