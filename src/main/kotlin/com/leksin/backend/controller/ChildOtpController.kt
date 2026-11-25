@@ -1,10 +1,9 @@
 package com.leksin.backend.controller
 
-import com.leksin.backend.dto.AuthResponse
-import com.leksin.backend.dto.ChildLoginResponse
-import com.leksin.backend.dto.ChildOtpRequest
-import com.leksin.backend.dto.ChildOtpVerifyRequest
-import com.leksin.backend.dto.MessageResponse
+import com.leksin.backend.dto.response.AuthResponse
+import com.leksin.backend.dto.request.ChildOtpRequest
+import com.leksin.backend.dto.request.ChildOtpVerifyRequest
+import com.leksin.backend.dto.response.MessageResponse
 import com.leksin.backend.service.ChildOtpService
 import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity

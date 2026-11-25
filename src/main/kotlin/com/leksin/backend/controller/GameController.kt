@@ -1,8 +1,8 @@
 package com.leksin.backend.controller
 
-import com.leksin.backend.dto.GameHistoryResponse
-import com.leksin.backend.dto.GameProgressResponse
-import com.leksin.backend.dto.GameSessionRequest
+import com.leksin.backend.dto.response.GameHistoryResponse
+import com.leksin.backend.dto.response.GameProgressResponse
+import com.leksin.backend.dto.request.GameSessionRequest
 import com.leksin.backend.security.ResourceAuthorizationService
 import com.leksin.backend.service.GameService
 import jakarta.validation.Valid

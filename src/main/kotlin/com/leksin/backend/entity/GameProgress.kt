@@ -1,6 +1,6 @@
 package com.leksin.backend.entity
 
-import com.leksin.backend.dto.GameProgressResponse
+import com.leksin.backend.dto.response.GameProgressResponse
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.FetchType

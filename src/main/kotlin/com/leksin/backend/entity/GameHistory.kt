@@ -1,6 +1,6 @@
 package com.leksin.backend.entity
 
-import com.leksin.backend.dto.GameHistoryResponse
+import com.leksin.backend.dto.response.GameHistoryResponse
 import jakarta.persistence.*
 import java.time.Instant
 import java.util.*

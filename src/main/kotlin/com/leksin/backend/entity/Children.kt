@@ -1,6 +1,6 @@
 package com.leksin.backend.entity
 
-import com.leksin.backend.dto.ChildResponse
+import com.leksin.backend.dto.response.ChildResponse
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.FetchType

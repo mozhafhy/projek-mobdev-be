@@ -1,4 +1,4 @@
-package com.leksin.backend.dto
+package com.leksin.backend.dto.request
 
 import jakarta.validation.constraints.Max
 import jakarta.validation.constraints.Min

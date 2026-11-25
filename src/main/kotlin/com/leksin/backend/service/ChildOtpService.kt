@@ -1,8 +1,8 @@
 package com.leksin.backend.service
 
-import com.leksin.backend.dto.AuthResponse
-import com.leksin.backend.dto.ChildOtpRequest
-import com.leksin.backend.dto.ChildOtpVerifyRequest
+import com.leksin.backend.dto.response.AuthResponse
+import com.leksin.backend.dto.request.ChildOtpRequest
+import com.leksin.backend.dto.request.ChildOtpVerifyRequest
 import com.leksin.backend.entity.ChildOtp
 import com.leksin.backend.entity.Children
 import com.leksin.backend.entity.Role

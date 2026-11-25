@@ -1,6 +1,6 @@
 package com.leksin.backend.entity
 
-import com.leksin.backend.dto.ParentResponse
+import com.leksin.backend.dto.response.ParentResponse
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.GeneratedValue

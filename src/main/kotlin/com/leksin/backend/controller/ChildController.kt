@@ -1,7 +1,7 @@
 package com.leksin.backend.controller
 
-import com.leksin.backend.dto.ChildCreateRequest
-import com.leksin.backend.dto.ChildResponse
+import com.leksin.backend.dto.request.ChildCreateRequest
+import com.leksin.backend.dto.response.ChildResponse
 import com.leksin.backend.security.ResourceAuthorizationService
 import com.leksin.backend.security.TokenPrincipal
 import com.leksin.backend.service.ChildService

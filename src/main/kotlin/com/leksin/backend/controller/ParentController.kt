@@ -1,9 +1,9 @@
 package com.leksin.backend.controller
 
-import com.leksin.backend.dto.AuthResponse
-import com.leksin.backend.dto.ParentLoginRequest
-import com.leksin.backend.dto.ParentRegisterRequest
-import com.leksin.backend.dto.ParentResponse
+import com.leksin.backend.dto.response.AuthResponse
+import com.leksin.backend.dto.request.ParentLoginRequest
+import com.leksin.backend.dto.request.ParentRegisterRequest
+import com.leksin.backend.dto.response.ParentResponse
 import com.leksin.backend.security.ResourceAuthorizationService
 import com.leksin.backend.service.ParentService
 import jakarta.validation.Valid

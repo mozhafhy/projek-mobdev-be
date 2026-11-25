@@ -1,4 +1,4 @@
-package com.leksin.backend.dto
+package com.leksin.backend.dto.response
 
 import java.time.LocalDate
 import java.util.UUID

@@ -1,7 +1,7 @@
 package com.leksin.backend.service
 
-import com.leksin.backend.dto.ChildCreateRequest
-import com.leksin.backend.dto.ChildResponse
+import com.leksin.backend.dto.request.ChildCreateRequest
+import com.leksin.backend.dto.response.ChildResponse
 import com.leksin.backend.entity.Children
 import com.leksin.backend.entity.toChildResponse
 import com.leksin.backend.exception.ChildNotFoundException

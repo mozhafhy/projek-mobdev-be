@@ -1,8 +1,8 @@
 package com.leksin.backend.service
 
-import com.leksin.backend.dto.GameHistoryResponse
-import com.leksin.backend.dto.GameProgressResponse
-import com.leksin.backend.dto.GameSessionRequest
+import com.leksin.backend.dto.response.GameHistoryResponse
+import com.leksin.backend.dto.response.GameProgressResponse
+import com.leksin.backend.dto.request.GameSessionRequest
 import com.leksin.backend.entity.GameHistory
 import com.leksin.backend.entity.GameProgress
 import com.leksin.backend.entity.toResponse
