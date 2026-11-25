@@ -3,6 +3,7 @@ package com.leksin.backend.controller
 import com.leksin.backend.dto.GameHistoryResponse
 import com.leksin.backend.dto.GameProgressResponse
 import com.leksin.backend.dto.GameSessionRequest
+import com.leksin.backend.security.ResourceAuthorizationService
 import com.leksin.backend.service.GameService
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
@@ -14,6 +15,7 @@ import java.util.*
 @RequestMapping("/api/child/{childId}/games")
 class GameController(
     private val gameService: GameService,
+    private val authorizationService: ResourceAuthorizationService,
 ) {
     @PostMapping("/sessions")
     fun recordSession(

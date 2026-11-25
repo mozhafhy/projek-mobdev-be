@@ -20,6 +20,7 @@ class GlobalExceptionHandler {
             is InvalidCredentialException -> HttpStatus.UNAUTHORIZED
             is ChildNotFoundException -> HttpStatus.NOT_FOUND
             is InvalidOtpException -> HttpStatus.UNAUTHORIZED
+            is DuplicateChildNicknameException -> HttpStatus.CONFLICT
         }
 
         return ProblemDetail.forStatusAndDetail(
@@ -45,15 +46,15 @@ class GlobalExceptionHandler {
         }
     }
 
-    @ExceptionHandler(Exception::class)
-    fun handleUnexpectedException(e: Exception): ProblemDetail {
-        logger.error("Unexpected exception", e)
-
+    @ExceptionHandler(AccessDeniedException::class)
+    fun handleAccessDeniedException(
+        e: AccessDeniedException,
+    ): ProblemDetail {
         return ProblemDetail.forStatusAndDetail(
-            HttpStatus.INTERNAL_SERVER_ERROR,
-            "An unexpected internal error occurred"
+            HttpStatus.FORBIDDEN,
+            "You do not have permission to access this resource",
         ).apply {
-            title = "Unexpected exception"
+            title = "Forbidden"
             setProperty("timestamp", Instant.now())
         }
     }
@@ -67,6 +68,19 @@ class GlobalExceptionHandler {
             e.message ?: "Invalid request",
         ).apply {
             title = "Invalid Request"
+            setProperty("timestamp", Instant.now())
+        }
+    }
+
+    @ExceptionHandler(Exception::class)
+    fun handleUnexpectedException(e: Exception): ProblemDetail {
+        logger.error("Unexpected exception", e)
+
+        return ProblemDetail.forStatusAndDetail(
+            HttpStatus.INTERNAL_SERVER_ERROR,
+            "An unexpected internal error occurred"
+        ).apply {
+            title = "Unexpected exception"
             setProperty("timestamp", Instant.now())
         }
     }

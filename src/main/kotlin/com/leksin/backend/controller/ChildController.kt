@@ -2,55 +2,48 @@ package com.leksin.backend.controller
 
 import com.leksin.backend.dto.ChildCreateRequest
 import com.leksin.backend.dto.ChildResponse
+import com.leksin.backend.security.ResourceAuthorizationService
+import com.leksin.backend.security.TokenPrincipal
 import com.leksin.backend.service.ChildService
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
-import org.springframework.http.ResponseEntity
-import org.springframework.web.bind.annotation.DeleteMapping
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PathVariable
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RestController
-import java.util.UUID
+import org.springframework.security.core.Authentication
+import org.springframework.security.core.annotation.AuthenticationPrincipal
+import org.springframework.web.bind.annotation.*
+import java.util.*
 
 @RestController
-@RequestMapping("/api/parents/{parentId}/children")
+@RequestMapping("/api/parent/children")
 class ChildController(
     private val childService: ChildService,
+    private val authorizationService: ResourceAuthorizationService,
 ) {
 
     @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
     fun create(
-        @PathVariable("parentId") parentId: UUID,
+        @AuthenticationPrincipal principal: TokenPrincipal,
         @Valid @RequestBody request: ChildCreateRequest,
-    ): ResponseEntity<ChildResponse> {
-        val createdChild = childService.create(
-            parentId, request
-        )
-
-        return ResponseEntity(createdChild, HttpStatus.CREATED)
-    }
+    ): ChildResponse = childService.create(principal.userId, request)
 
     @GetMapping
     fun findAll(
-        @PathVariable("parentId") parentId: UUID,
-    ): ResponseEntity<List<ChildResponse>> {
-        return ResponseEntity(
-            childService.findAll(parentId),
-            HttpStatus.OK,
-        )
-    }
+        @AuthenticationPrincipal principal: TokenPrincipal,
+    ): List<ChildResponse> = childService.findAll(principal.userId)
 
     @DeleteMapping("/{childId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     fun delete(
-        @PathVariable("childId") childId: UUID,
-        @PathVariable("parentId") parentId: UUID,
-    ): ResponseEntity<Unit> {
-        return ResponseEntity(
-            childService.delete(parentId, childId),
-            HttpStatus.NO_CONTENT
+        @AuthenticationPrincipal principal: TokenPrincipal,
+        @PathVariable childId: UUID,
+        authentication: Authentication,
+    ) {
+        val parentId = principal.userId
+        authorizationService.requireParentAccess(
+            parentId,
+            authentication
         )
+
+        childService.delete(parentId, childId)
     }
 }

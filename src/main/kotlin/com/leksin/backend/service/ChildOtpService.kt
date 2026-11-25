@@ -1,13 +1,15 @@
 package com.leksin.backend.service
 
-import com.leksin.backend.dto.ChildLoginResponse
+import com.leksin.backend.dto.AuthResponse
 import com.leksin.backend.dto.ChildOtpRequest
 import com.leksin.backend.dto.ChildOtpVerifyRequest
 import com.leksin.backend.entity.ChildOtp
 import com.leksin.backend.entity.Children
+import com.leksin.backend.entity.Role
 import com.leksin.backend.exception.InvalidOtpException
 import com.leksin.backend.repository.ChildOtpRepository
 import com.leksin.backend.repository.ChildRepository
+import com.leksin.backend.security.JwtService
 import org.springframework.mail.SimpleMailMessage
 import org.springframework.mail.javamail.JavaMailSender
 import org.springframework.security.crypto.password.PasswordEncoder
@@ -17,6 +19,7 @@ import java.security.SecureRandom
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
+import java.util.UUID
 
 @Service
 @Transactional(readOnly = true)
@@ -26,6 +29,7 @@ class ChildOtpService(
     private val passwordEncoder: PasswordEncoder,
     private val emailSender: JavaMailSender,
     private val clock: Clock,
+    private val jwtService: JwtService,
 ) {
 
     private val secureRandom = SecureRandom()
@@ -33,6 +37,8 @@ class ChildOtpService(
     private companion object {
         const val MAX_FAILED_ATTEMPTS = 3
         const val OTP_EXPIRATION_PERIOD = 1L
+        const val MAX_OTP_REQUESTS = 3
+        val OTP_REQUEST_WINDOW: Duration = Duration.ofMinutes(10)
     }
 
     @Transactional
@@ -44,6 +50,8 @@ class ChildOtpService(
 
         val childId = child.id!!
         val now = clock.instant()
+
+        if (hasExceededRequestLimit(childId, now)) return
 
         childOtpRepository.findLatestValidByChildId(
             childId,
@@ -63,14 +71,14 @@ class ChildOtpService(
         val message = SimpleMailMessage().apply {
             setTo(child.parent.email)
             subject = "LEKSIN Child Login OTP"
-            text = "Your login code is $code. It expires in $OTP_EXPIRATION_PERIOD minutes."
+            text = "Your login code is $code.\nIt expires in $OTP_EXPIRATION_PERIOD minutes."
         }
 
         emailSender.send(message)
     }
 
     @Transactional(noRollbackFor = [InvalidOtpException::class])
-    fun verifyOtp(request: ChildOtpVerifyRequest): ChildLoginResponse {
+    fun verifyOtp(request: ChildOtpVerifyRequest): AuthResponse {
         val child = findChild(
             request.parentUsername,
             request.nickname,
@@ -79,8 +87,7 @@ class ChildOtpService(
         val childId = child.id!!
         val now = clock.instant()
 
-        val otp = childOtpRepository.findLatestValidByChildId(childId, now)
-            ?: throw InvalidOtpException()
+        val otp = childOtpRepository.findLatestValidByChildId(childId, now) ?: throw InvalidOtpException()
 
         if (!passwordEncoder.matches(request.code, otp.codeHash)) {
             registerFailedAttempt(otp, now)
@@ -88,7 +95,16 @@ class ChildOtpService(
         }
 
         otp.usedAt = now
-        return ChildLoginResponse(childId = childId, nickname = child.nickname)
+        return AuthResponse(
+            userId = childId,
+            username = child.nickname,
+            role = Role.CHILD.name,
+            accessToken = jwtService.generateToken(
+                childId,
+                Role.CHILD,
+            ),
+            expiresIn = jwtService.expirationSeconds,
+        )
     }
 
     private fun findChild(parentUsername: String, nickname: String): Children? =
@@ -103,4 +119,10 @@ class ChildOtpService(
             otp.usedAt = now
         }
     }
+
+    private fun hasExceededRequestLimit(childId: UUID, now: Instant): Boolean =
+        childOtpRepository.countByChildIdAndCreatedAtAfter(
+            childId,
+            now.minus(OTP_REQUEST_WINDOW),
+        ) >= MAX_OTP_REQUESTS
 }

@@ -1,5 +1,6 @@
 package com.leksin.backend.controller
 
+import com.leksin.backend.dto.AuthResponse
 import com.leksin.backend.dto.ChildLoginResponse
 import com.leksin.backend.dto.ChildOtpRequest
 import com.leksin.backend.dto.ChildOtpVerifyRequest
@@ -31,7 +32,7 @@ class ChildOtpController(
     @PostMapping("/verify-otp")
     fun verifyOtp(
         @Valid @RequestBody request: ChildOtpVerifyRequest,
-    ): ResponseEntity<ChildLoginResponse> {
+    ): ResponseEntity<AuthResponse> {
         return ResponseEntity.ok(
             childOtpService.verifyOtp(request)
         )

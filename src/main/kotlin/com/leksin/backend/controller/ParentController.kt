@@ -1,12 +1,15 @@
 package com.leksin.backend.controller
 
+import com.leksin.backend.dto.AuthResponse
 import com.leksin.backend.dto.ParentLoginRequest
 import com.leksin.backend.dto.ParentRegisterRequest
 import com.leksin.backend.dto.ParentResponse
+import com.leksin.backend.security.ResourceAuthorizationService
 import com.leksin.backend.service.ParentService
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.security.core.Authentication
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
@@ -17,12 +20,13 @@ import org.springframework.web.bind.annotation.RestController
 import java.net.URI
 
 @RestController
-@RequestMapping("/api/parents")
+@RequestMapping("/api/parent")
 class ParentController(
     private val parentService: ParentService,
+    private val authorizationService: ResourceAuthorizationService,
 ) {
 
-    @PostMapping
+    @PostMapping("/register")
     @ResponseStatus(HttpStatus.CREATED)
     fun register(
         @Valid @RequestBody request: ParentRegisterRequest,
@@ -34,16 +38,22 @@ class ParentController(
     @PostMapping("/login")
     fun login(
         @Valid @RequestBody request: ParentLoginRequest,
-    ): ResponseEntity<ParentResponse> {
+    ): ResponseEntity<AuthResponse> {
         val result = parentService.login(request)
 
         return ResponseEntity.ok(result)
     }
 
     @GetMapping("/{username}")
-    fun findByUsername(
+    fun getProfile(
         @PathVariable username: String,
+        authentication: Authentication,
     ): ResponseEntity<ParentResponse> {
+        authorizationService.requireOwnParentProfile(
+            username = username,
+            authentication = authentication,
+        )
+
         val result = parentService.findByUsername(username)
         return ResponseEntity.ok(result)
     }

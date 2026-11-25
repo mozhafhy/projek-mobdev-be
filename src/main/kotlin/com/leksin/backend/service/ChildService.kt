@@ -5,6 +5,7 @@ import com.leksin.backend.dto.ChildResponse
 import com.leksin.backend.entity.Children
 import com.leksin.backend.entity.toChildResponse
 import com.leksin.backend.exception.ChildNotFoundException
+import com.leksin.backend.exception.DuplicateChildNicknameException
 import com.leksin.backend.exception.ParentNotFoundException
 import com.leksin.backend.repository.ChildRepository
 import com.leksin.backend.repository.ParentRepository
@@ -19,11 +20,17 @@ class ChildService(
     private val parentRepository: ParentRepository,
 ) {
 
+    @Transactional
     fun create(
         parentId: UUID,
         request: ChildCreateRequest,
     ): ChildResponse {
         val parent = parentRepository.findById(parentId).orElseThrow { ParentNotFoundException() }
+
+        if (childRepository.existsByNicknameAndParentUsername(
+            nickname = request.nickname,
+            parentUsername = parent.username,
+        )) throw DuplicateChildNicknameException()
 
         val child = Children(
             nickname = request.nickname,

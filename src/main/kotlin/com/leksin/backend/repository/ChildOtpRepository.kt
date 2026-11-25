@@ -18,4 +18,6 @@ interface ChildOtpRepository: JpaRepository<ChildOtp, UUID> {
     """
     )
     fun findLatestValidByChildId(childId: UUID, now: Instant): ChildOtp?
+
+    fun countByChildIdAndCreatedAtAfter(childId: UUID, since: Instant): Long
 }
