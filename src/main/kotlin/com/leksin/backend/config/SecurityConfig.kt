@@ -30,7 +30,10 @@ class SecurityConfig(
                 it.requestMatchers(
                     "/api/parent/register",
                     "/api/parent/login",
-                    "/api/child/auth/**",
+                    "/api/child/auth/request-otp",
+                    "/api/child/auth/verify-otp",
+                    "/actuator/health",
+                    "/actuator/health/**",
                     "/error",
                 ).permitAll()
 
