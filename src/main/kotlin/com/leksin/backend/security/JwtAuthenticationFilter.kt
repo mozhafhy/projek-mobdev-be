@@ -1,5 +1,6 @@
 package com.leksin.backend.security
 
+import com.leksin.backend.service.TokenRevocationService
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
@@ -12,6 +13,7 @@ import org.springframework.web.filter.OncePerRequestFilter
 @Component
 class JwtAuthenticationFilter(
     private val jwtService: JwtService,
+    private val tokenRevocationService: TokenRevocationService,
 ) : OncePerRequestFilter() {
 
     override fun doFilterInternal(
@@ -25,7 +27,10 @@ class JwtAuthenticationFilter(
 
         val principal = token?.let(jwtService::parse)
 
-        if (principal != null) {
+        if (
+            principal != null &&
+            !tokenRevocationService.isRevoked(principal.tokenId)
+        ) {
             val authentication = UsernamePasswordAuthenticationToken(
                 principal,
                 null,

@@ -1,6 +1,8 @@
 package com.leksin.backend.config
 
 import com.leksin.backend.security.JwtAuthenticationFilter
+import com.leksin.backend.security.JwtService
+import com.leksin.backend.service.TokenRevocationService
 import jakarta.servlet.http.HttpServletResponse
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -14,12 +16,14 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
-class SecurityConfig(
-    private val jwtAuthenticationFilter: JwtAuthenticationFilter,
-) {
+class SecurityConfig {
 
     @Bean
-    fun securityFilterChain(http: HttpSecurity): SecurityFilterChain {
+    fun securityFilterChain(
+        http: HttpSecurity,
+        jwtService: JwtService,
+        tokenRevocationService: TokenRevocationService,
+    ): SecurityFilterChain {
         return http
             .csrf { it.disable() }
             .sessionManagement {
@@ -44,7 +48,7 @@ class SecurityConfig(
                 it.anyRequest().authenticated()
             }
             .addFilterBefore(
-                jwtAuthenticationFilter,
+                JwtAuthenticationFilter(jwtService, tokenRevocationService),
                 UsernamePasswordAuthenticationFilter::class.java,
             )
             .build()
