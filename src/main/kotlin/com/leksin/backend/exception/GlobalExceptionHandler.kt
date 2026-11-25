@@ -1,6 +1,7 @@
 package com.leksin.backend.exception
 
 import org.slf4j.LoggerFactory
+import org.springframework.security.access.AccessDeniedException
 import org.springframework.http.HttpStatus
 import org.springframework.http.ProblemDetail
 import org.springframework.web.bind.MethodArgumentNotValidException
@@ -50,6 +51,7 @@ class GlobalExceptionHandler {
     fun handleAccessDeniedException(
         e: AccessDeniedException,
     ): ProblemDetail {
+        logger.error("Access denied exception", e)
         return ProblemDetail.forStatusAndDetail(
             HttpStatus.FORBIDDEN,
             "You do not have permission to access this resource",

@@ -1,6 +1,7 @@
 package com.leksin.backend.security
 
 import com.leksin.backend.entity.Role
+import com.leksin.backend.exception.ChildNotFoundException
 import com.leksin.backend.exception.ParentNotFoundException
 import com.leksin.backend.repository.ChildRepository
 import com.leksin.backend.repository.ParentRepository
@@ -57,7 +58,7 @@ class ResourceAuthorizationService(
         val principal = getPrincipal(authentication)
 
         val child = childRepository.findById(childId)
-            .orElseThrow { AccessDeniedException("Access denied") }
+            .orElseThrow { ChildNotFoundException() }
 
         val isChildOwner =
             principal.role == Role.CHILD &&

@@ -28,9 +28,9 @@ class ChildService(
         val parent = parentRepository.findById(parentId).orElseThrow { ParentNotFoundException() }
 
         if (childRepository.existsByNicknameAndParentUsername(
-            nickname = request.nickname,
-            parentUsername = parent.username,
-        )) throw DuplicateChildNicknameException()
+                nickname = request.nickname,
+                parentUsername = parent.username,
+            )) throw DuplicateChildNicknameException()
 
         val child = Children(
             nickname = request.nickname,
