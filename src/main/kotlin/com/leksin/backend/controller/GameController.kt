@@ -8,6 +8,7 @@ import com.leksin.backend.service.GameService
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.security.core.Authentication
 import org.springframework.web.bind.annotation.*
 import java.util.*
 
@@ -21,7 +22,13 @@ class GameController(
     fun recordSession(
         @PathVariable childId: UUID,
         @Valid @RequestBody request: GameSessionRequest,
+        authentication: Authentication
     ): ResponseEntity<GameHistoryResponse> {
+        authorizationService.requireChildAccess(
+            childId,
+            authentication,
+        )
+
         return ResponseEntity(
             gameService.recordSession(childId, request),
             HttpStatus.CREATED
@@ -31,7 +38,13 @@ class GameController(
     @GetMapping("/history")
     fun getHistory(
         @PathVariable childId: UUID,
+        authentication: Authentication
     ): ResponseEntity<List<GameHistoryResponse>> {
+        authorizationService.requireChildAccess(
+            childId,
+            authentication,
+        )
+
         return ResponseEntity.ok(
         gameService.getHistory(childId)
         )
@@ -40,7 +53,13 @@ class GameController(
     @GetMapping("/progress")
     fun getProgress(
         @PathVariable childId: UUID,
+        authentication: Authentication
     ): ResponseEntity<GameProgressResponse> {
+        authorizationService.requireChildAccess(
+            childId,
+            authentication,
+        )
+
         return ResponseEntity.ok(
         gameService.getProgress(childId)
         )
