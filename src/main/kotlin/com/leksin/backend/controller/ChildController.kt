@@ -24,12 +24,20 @@ class ChildController(
     fun create(
         @AuthenticationPrincipal principal: TokenPrincipal,
         @Valid @RequestBody request: ChildCreateRequest,
-    ): ChildResponse = childService.create(principal.userId, request)
+        authentication: Authentication,
+    ): ChildResponse {
+        authorizationService.requireParentAccess(principal.userId, authentication)
+        return childService.create(principal.userId, request)
+    }
 
     @GetMapping
     fun findAll(
         @AuthenticationPrincipal principal: TokenPrincipal,
-    ): List<ChildResponse> = childService.findAll(principal.userId)
+        authentication: Authentication,
+    ): List<ChildResponse> {
+        authorizationService.requireParentAccess(principal.userId, authentication)
+        return childService.findAll(principal.userId)
+    }
 
     @DeleteMapping("/{childId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)

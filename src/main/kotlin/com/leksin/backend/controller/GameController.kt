@@ -45,9 +45,7 @@ class GameController(
             authentication,
         )
 
-        return ResponseEntity.ok(
-        gameService.getHistory(childId)
-        )
+        return ResponseEntity.ok(gameService.getHistory(childId))
     }
 
     @GetMapping("/progress")
@@ -60,8 +58,6 @@ class GameController(
             authentication,
         )
 
-        return ResponseEntity.ok(
-        gameService.getProgress(childId)
-        )
+        return ResponseEntity.ok(gameService.getProgress(childId))
     }
 }
