@@ -5,7 +5,7 @@ WORKDIR /workspace
 COPY . .
 
 RUN chmod +x ./gradlew \
-    && ./gradlew --no-daemon clean bootJar \
+    && ./gradlew --no-daemon clean test bootJar \
     && BOOT_JAR="$(find build/libs -maxdepth 1 -type f -name '*.jar' ! -name '*-plain.jar' -print -quit)" \
     && test -n "$BOOT_JAR" \
     && cp "$BOOT_JAR" /workspace/app.jar
