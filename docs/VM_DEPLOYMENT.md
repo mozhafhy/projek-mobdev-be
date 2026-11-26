@@ -50,10 +50,15 @@ docker compose up -d --build
 docker compose ps
 curl -fsS http://127.0.0.1:8080/actuator/health
 sudo mkdir -p /var/www/html
-sudo certbot certonly --webroot -w /var/www/html -d api.example.com
-sudo cp deploy/nginx/leksin.conf.example /etc/nginx/sites-available/leksin
+sudo cp deploy/nginx/leksin-http.conf.example /etc/nginx/sites-available/leksin
 # Ganti api.example.com pada file Nginx dengan domain aktual.
 sudo ln -s /etc/nginx/sites-available/leksin /etc/nginx/sites-enabled/leksin
+sudo nginx -t
+sudo systemctl reload nginx
+# Pastikan firewall provider dan UFW mengizinkan TCP 80 dan 443.
+sudo certbot certonly --webroot -w /var/www/html -d api.example.com
+sudo cp deploy/nginx/leksin.conf.example /etc/nginx/sites-available/leksin
+# Ganti api.example.com pada konfigurasi HTTPS jika belum dilakukan.
 sudo nginx -t
 sudo systemctl reload nginx
 sudo certbot renew --dry-run
