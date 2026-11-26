@@ -5,6 +5,8 @@
 .vscode
 build
 out
+*.iml
+*.log
 .env
 .env.*
-*.log
+!.env.example
