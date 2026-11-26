@@ -10,6 +10,8 @@ import com.leksin.backend.exception.InvalidOtpException
 import com.leksin.backend.repository.ChildOtpRepository
 import com.leksin.backend.repository.ChildRepository
 import com.leksin.backend.security.JwtService
+import org.slf4j.LoggerFactory
+import org.springframework.mail.MailException
 import org.springframework.mail.SimpleMailMessage
 import org.springframework.mail.javamail.JavaMailSender
 import org.springframework.security.crypto.password.PasswordEncoder
@@ -33,6 +35,7 @@ class ChildOtpService(
 ) {
 
     private val secureRandom = SecureRandom()
+    private val logger = LoggerFactory.getLogger(ChildOtpService::class.java)
 
     private companion object {
         const val MAX_FAILED_ATTEMPTS = 3
@@ -43,7 +46,7 @@ class ChildOtpService(
 
     @Transactional
     fun requestOtp(request: ChildOtpRequest) {
-        val child = findChild(
+        val child = findAndLockChild(
             request.parentUsername,
             request.nickname,
         ) ?: return
@@ -68,18 +71,15 @@ class ChildOtpService(
 
         childOtpRepository.save(otp)
 
-        val message = SimpleMailMessage().apply {
-            setTo(child.parent.email)
-            subject = "LEKSIN Child Login OTP"
-            text = "Your login code is $code.\nIt expires in $OTP_EXPIRATION_PERIOD minutes."
-        }
-
-        emailSender.send(message)
+        sendOtpEmail(
+            recipient = child.parent.email,
+            code = code,
+        )
     }
 
     @Transactional(noRollbackFor = [InvalidOtpException::class])
     fun verifyOtp(request: ChildOtpVerifyRequest): AuthResponse {
-        val child = findChild(
+        val child = findAndLockChild(
             request.parentUsername,
             request.nickname,
         ) ?: throw InvalidOtpException()
@@ -107,11 +107,24 @@ class ChildOtpService(
         )
     }
 
-    private fun findChild(parentUsername: String, nickname: String): Children? =
-        childRepository.findByNicknameAndParentUsername(
-            nickname,
-            parentUsername,
-        )
+    private fun findAndLockChild(parentUsername: String, nickname: String): Children? =
+        childRepository.findByNicknameAndParentUsername(nickname, parentUsername)
+            ?.also { childRepository.lockById(it.id!!) }
+
+    private fun sendOtpEmail(recipient: String, code: String) {
+        try {
+            emailSender.send(buildOtpEmail(recipient, code))
+        } catch (e: MailException) {
+            logger.error("Gagal mengirim email OTP: {}", e.javaClass.simpleName)
+        }
+    }
+
+    private fun buildOtpEmail(recipient: String, code: String) =
+        SimpleMailMessage().apply {
+            setTo(recipient)
+            subject = "LEKSIN Child Login OTP"
+            text = "Your login code is $code.\nIt expires in $OTP_EXPIRATION_PERIOD minutes."
+        }
 
     private fun registerFailedAttempt(otp: ChildOtp, now: Instant) {
         otp.failedAttempts++
