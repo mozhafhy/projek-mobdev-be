@@ -31,6 +31,8 @@ sudo apt update && sudo apt upgrade -y
 sudo apt install -y ca-certificates curl git openssl nginx certbot
 # Pasang Docker Engine dan Docker Compose plugin dari repository resmi Docker.
 sudo systemctl enable --now docker
+sudo usermod -aG docker "$USER"
+# Keluar dari SSH lalu login kembali agar grup docker diterapkan.
 docker --version
 docker compose version
 sudo mkdir -p /opt/leksin
@@ -149,13 +151,13 @@ docker compose version
 sudo docker run --rm hello-world
 ```
 
-Jika ingin menjalankan Docker tanpa `sudo`, tambahkan user ke grup Docker:
+Agar perintah `docker compose` pada panduan ini dapat dijalankan tanpa `sudo`, tambahkan user deployment ke grup Docker:
 
 ```bash
 sudo usermod -aG docker "$USER"
 ```
 
-Keluar dari SSH lalu login kembali agar keanggotaan grup diterapkan. Keanggotaan grup Docker setara dengan hak root pada host; berikan hanya kepada administrator tepercaya.
+Keluar dari SSH lalu login kembali sebelum menjalankan Docker. Keanggotaan grup Docker setara dengan hak root pada host; berikan hanya kepada administrator tepercaya. Jika kebijakan server melarang grup Docker, pertahankan penggunaan `sudo docker` dan `sudo docker compose` pada seluruh perintah berikutnya.
 
 ### 2.3 Clone repository dan jalankan checker
 
