@@ -86,6 +86,21 @@ Simpan token secara aman. Pada Android, gunakan Android Keystore-backed storage 
 
 Response `200 OK` memiliki bentuk yang sama dengan response register. Parent hanya dapat membaca profil miliknya sendiri.
 
+### Perbarui profil parent
+
+`PATCH /api/parent/profile` (role `PARENT`)
+
+Kirim hanya field yang ingin diubah:
+
+```json
+{
+  "username": "parent02",
+  "email": "parent.new@example.com"
+}
+```
+
+Kedua field bersifat opsional; `username` dibatasi 3-50 karakter dan `email` harus valid. Response `200 OK` menggunakan `ParentResponse`.
+
 ## 4. Pengelolaan child
 
 Semua endpoint berikut membutuhkan token parent.
@@ -125,6 +140,18 @@ Response `200 OK`:
   }
 ]
 ```
+
+### Perbarui profil child
+
+`PUT /api/parent/children/{childId}`
+
+```json
+{
+  "nickname": "Alya Baru"
+}
+```
+
+Response `200 OK` menggunakan `ChildResponse`. Nickname harus 2-32 karakter dan tetap unik di bawah parent yang sama.
 
 ### Hapus child
 
@@ -234,7 +261,15 @@ Response `200 OK`:
 
 Jika child belum memiliki progress, backend mengembalikan nilai angka `0` dan `lastActivityDate: null`.
 
-## 7. HTTP status dan error
+## 7. Logout
+
+`POST /api/auth/logout` (authenticated, role `PARENT` atau `CHILD`)
+
+Kirim header `Authorization: Bearer <accessToken>`. Response `204 No Content` tanpa body. Backend memasukkan ID token ke daftar revoked; token tersebut akan ditolak pada request berikutnya.
+
+Setelah menerima `204`, hapus token dari penyimpanan lokal dan arahkan pengguna ke layar login. Jika request logout gagal karena jaringan, penghapusan token lokal tetap mengakhiri sesi pada perangkat, tetapi token di server belum tentu tercabut dan masih dapat dipakai sampai kedaluwarsa.
+
+## 8. HTTP status dan error
 
 | Status | Makna | Tindakan client |
 |---|---|---|
@@ -265,7 +300,7 @@ Error menggunakan `ProblemDetail` Spring. Bentuk umum:
 
 Tidak semua error memiliki properti `errors`. Client sebaiknya membaca `status`, `title`, dan `detail` secara defensif.
 
-## 8. Model Kotlin minimum
+## 9. Model Kotlin minimum
 
 ```kotlin
 data class AuthResponse(
@@ -302,7 +337,7 @@ data class GameProgressResponse(
 
 Untuk Android, UUID direpresentasikan sebagai `String` agar parsing JSON sederhana. Jika memakai `java.util.UUID`, pastikan serializer mengubahnya menjadi string.
 
-## 9. Retrofit interface reference
+## 10. Retrofit interface reference
 
 ```kotlin
 interface LeksinApi {
@@ -318,6 +353,20 @@ interface LeksinApi {
 
     @GET("api/parent/children")
     suspend fun getChildren(): List<ChildResponse>
+
+    @PATCH("api/parent/profile")
+    suspend fun updateParentProfile(
+        @Body request: ParentProfileUpdateRequest,
+    ): ParentResponse
+
+    @PUT("api/parent/children/{childId}")
+    suspend fun updateChildProfile(
+        @Path("childId") childId: String,
+        @Body request: ChildProfileUpdateRequest,
+    ): ChildResponse
+
+    @POST("api/auth/logout")
+    suspend fun logout(): Response<Unit>
 
     @POST("api/parent/children")
     suspend fun createChild(
@@ -354,11 +403,12 @@ interface LeksinApi {
 
 Tambahkan endpoint lain sesuai kebutuhan aplikasi. Pasang OkHttp interceptor untuk menambahkan Bearer token pada request terproteksi; jangan menambahkan token ke endpoint register, login, request OTP, atau verify OTP sebelum token tersedia.
 
-## 10. Batas kontrak saat ini
+## 11. Batas kontrak saat ini
 
-- Belum ada refresh token. Saat JWT kedaluwarsa, client harus mengarahkan pengguna login kembali.
-- Belum ada endpoint logout server-side. Hapus token lokal saat logout.
+- Saat JWT kedaluwarsa, client harus mengarahkan pengguna login kembali.
+- Logout server-side tersedia dan mencabut JWT yang sedang dipakai. Tidak ada refresh token.
 - Belum ada pagination untuk riwayat permainan.
 - Belum ada idempotency key untuk pencatatan sesi. Hindari retry otomatis POST sesi setelah timeout karena dapat membuat duplikasi.
+- OTP berlaku 1 menit, maksimal 3 permintaan dalam 10 menit per child, dan maksimal 3 percobaan verifikasi per OTP.
 - Belum ada server-side verification atas OCR atau skor game.
 - Tidak ada upload foto tulisan. OCR/Tesseract berjalan di perangkat Android sesuai rancangan MVP.
