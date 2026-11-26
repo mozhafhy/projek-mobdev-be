@@ -10,6 +10,7 @@ REST API untuk aplikasi pembelajaran LEKSIN. Backend menggunakan Kotlin, Spring 
 - PostgreSQL
 - JWT (JJWT 0.12.6)
 - Gradle Wrapper 9.9.2
+- Docker untuk deployment
 
 ## Menjalankan secara lokal
 
@@ -27,20 +28,15 @@ REST API untuk aplikasi pembelajaran LEKSIN. Backend menggunakan Kotlin, Spring 
 | `DB_POOL_SIZE` | `5` | Opsional: maksimum koneksi pool |
 | `JWT_SECRET` | Base64 key minimal 32 byte | Kunci signing JWT |
 | `JWT_EXPIRATION_MS` | `86400000` | Opsional: masa berlaku JWT dalam milidetik |
-| `MAIL_HOST` | `smtp.gmail.com` | Gmail SMTP host |
-| `MAIL_PORT` | `587` | Gmail SMTP port dengan STARTTLS |
-| `MAIL_USERNAME` | alamat Gmail lengkap | Akun Gmail pengirim |
-| `MAIL_PASSWORD` | Google App Password | App Password 16 karakter, bukan password akun |
+| `MAIL_HOST` | `smtp-relay.brevo.com` | Brevo SMTP host |
+| `MAIL_PORT` | `2525` | Port SMTP dengan STARTTLS |
+| `MAIL_USERNAME` | SMTP login Brevo | Login SMTP, bukan alamat pengirim |
+| `MAIL_PASSWORD` | SMTP key Brevo | SMTP key, bukan API key |
+| `MAIL_FROM` | Alamat pengirim terverifikasi | Sender yang sudah diverifikasi di Brevo |
 | `MAIL_SMTP_AUTH` | `true` | Aktifkan SMTP AUTH |
 | `MAIL_SMTP_STARTTLS` | `true` | Aktifkan STARTTLS |
 
-Untuk Gmail SMTP:
-
-1. Aktifkan 2-Step Verification pada akun Google.
-2. Buat App Password khusus untuk LEKSIN.
-3. Isi `MAIL_USERNAME` dengan alamat Gmail lengkap.
-4. Isi `MAIL_PASSWORD` dengan App Password 16 karakter. Jangan gunakan password login Google biasa.
-5. Jangan commit App Password ke Git. Di Render, isi nilainya melalui Environment.
+Gunakan SMTP login dan SMTP key dari halaman SMTP Brevo. Pastikan alamat `MAIL_FROM` sudah diverifikasi di Brevo. Jangan gunakan API key sebagai password SMTP.
 
 Buat JWT secret lokal dengan:
 
@@ -72,7 +68,9 @@ Lihat [Android API Integration](docs/ANDROID_INTEGRATION.md) untuk endpoint, pay
 
 ## Deployment
 
-Lihat [Render Deployment](docs/RENDER_DEPLOYMENT.md). Repository sudah menyediakan `Dockerfile` dan `render.yaml` sebagai titik awal deployment.
+Deployment utama menggunakan Ubuntu Server VM dengan Docker Compose dan PostgreSQL. Ikuti [VM Deployment](docs/VM_DEPLOYMENT.md) untuk persiapan server, environment variables, konfigurasi container, reverse proxy, HTTPS, dan verifikasi API.
+
+Konfigurasi deployment Render lama disimpan sebagai arsip di [archive/render](archive/render/). Konfigurasi tersebut hanya untuk referensi dan tidak digunakan pada deployment aktif.
 
 ## Catatan MVP
 
