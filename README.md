@@ -4,7 +4,7 @@ REST API untuk aplikasi pembelajaran LEKSIN. Backend menggunakan Kotlin, Spring 
 
 ## Quick start: local development with Docker
 
-Persyaratan: Git dan Docker Engine/Desktop dengan Docker Compose v2. Java dan Gradle lokal tidak diperlukan; image build menyediakan Java 21 dan menjalankan Gradle Wrapper di dalam container.
+Persyaratan: Git dan Docker Engine/Desktop dengan Docker Compose v2. Java dan Gradle lokal tidak diperlukan; image build menyediakan Java 21 dan menjalankan Gradle Wrapper di dalam container. Proses Docker build juga menjalankan seluruh automated tests sebelum membuat JAR.
 
 Jalankan perintah berikut dari terminal:
 
@@ -83,7 +83,7 @@ Gunakan base URL `http://localhost:8080/` pada build debug Android. Perintah rev
 
 Port backend hanya dipetakan ke `127.0.0.1:8080`. PostgreSQL tidak mempublikasikan port ke host atau internet. Backend mengakses database melalui hostname internal Docker `database:5432`.
 
-Dockerfile menjalankan Gradle Wrapper pada build stage berbasis JDK 21, kemudian menyalin executable JAR ke image runtime berbasis JRE 21. Dengan demikian, kolaborator tidak perlu memasang Java atau Gradle pada host.
+Dockerfile menjalankan Gradle Wrapper pada build stage berbasis JDK 21, menjalankan automated tests, kemudian menyalin executable JAR ke image runtime berbasis JRE 21. Dengan demikian, kolaborator tidak perlu memasang Java atau Gradle pada host.
 
 ### Environment variables
 
@@ -123,13 +123,11 @@ docker compose restart backend
 docker compose down
 ```
 
-Test otomatis memakai profile `test` dan H2. Jalankan test dalam build container bila diperlukan:
+Docker build menjalankan `clean test bootJar`. Untuk menjalankan ulang test dan build image tanpa cache:
 
 ```bash
-docker compose run --rm backend sh -c 'true'
+docker compose build --no-cache backend
 ```
-
-Untuk menjalankan seluruh test Gradle, gunakan task CI/build yang memakai JDK 21; jangan mengandalkan JDK host yang berbeda versi.
 
 ## API documentation
 
@@ -141,10 +139,6 @@ Dokumentasi dibuat oleh `springdoc-openapi`. Spring Boot sendiri tidak menyertak
 
 Dokumentasi dapat diakses tanpa JWT agar kolaborator mudah mengeksplorasi kontrak API. Endpoint bisnis tetap mengikuti autentikasi JWT dan otorisasi role. Untuk production, pertimbangkan membatasi akses dokumentasi melalui konfigurasi keamanan atau reverse proxy jika spesifikasi API tidak boleh tersedia untuk publik.
 
-## Testing
-
-Test memakai konfigurasi profile `test` dengan H2. PostgreSQL lokal tidak diperlukan untuk test tersebut. Jalankan test melalui Gradle Wrapper di lingkungan JDK 21, atau tambahkan test stage pada pipeline Docker/CI sebelum image dirilis.
-
 ## Android API integration
 
 Lihat [Android API Integration](docs/ANDROID_INTEGRATION.md) untuk endpoint, payload, autentikasi, format respons, aturan otorisasi, dan catatan kompatibilitas Retrofit/OkHttp.
@@ -153,7 +147,7 @@ Lihat [Android API Integration](docs/ANDROID_INTEGRATION.md) untuk endpoint, pay
 
 Deployment aktif menggunakan Ubuntu VM, Docker Compose, Nginx, Cloudflare DNS/proxy, dan HTTPS Let's Encrypt. Ikuti [Remote VM Deployment](docs/VM_DEPLOYMENT.md) untuk daftar perintah setup, persiapan domain, konfigurasi Cloudflare, VM, firewall, TLS, pembaruan, dan verifikasi.
 
-Sebelum deployment, jalankan environment checker dari VM:
+Setelah repository di-clone pada VM dan Docker terpasang, jalankan environment checker:
 
 ```bash
 chmod +x scripts/check-remote-env.sh
