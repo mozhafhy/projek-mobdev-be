@@ -1,10 +1,10 @@
 # Deployment LEKSIN Backend pada Ubuntu VM
 
-Panduan ini menjadi jalur deployment aktif LEKSIN. Target VM saat ini: Ubuntu 22.04, 2 vCPU, RAM 2 GB, storage 20 GB, dan public IP.
+Panduan ini menjadi jalur deployment aktif LEKSIN. Target VM: Ubuntu 22.04, 2 vCPU, RAM 2 GB, storage 20 GB, dan public IP.
 
-Arsitektur MVP:
+Arsitektur:
 - Docker Compose menjalankan Spring Boot dan PostgreSQL.
-- PostgreSQL hanya dapat diakses melalui Docker network, bukan port publik.
+- PostgreSQL hanya dapat diakses melalui Docker network.
 - Backend dipetakan ke `127.0.0.1:8080` pada VM.
 - Nginx pada host menjadi reverse proxy.
 - Brevo menangani pengiriman email OTP.
@@ -18,7 +18,7 @@ docker --version
 docker compose version
 ```
 
-Clone repository ke VM:
+Clone repository:
 
 ```bash
 sudo mkdir -p /opt/leksin
@@ -64,7 +64,7 @@ openssl rand -base64 32
 
 Gunakan SMTP login dan SMTP key dari Brevo. `MAIL_FROM` harus merupakan alamat pengirim yang sudah diverifikasi. Jangan gunakan Brevo API key sebagai password SMTP.
 
-Batasi permission:
+Batasi permission file:
 
 ```bash
 chmod 600 .env
@@ -95,18 +95,42 @@ docker compose down
 
 Jangan gunakan `docker compose down -v` kecuali memang ingin menghapus volume database.
 
-## 4. Nginx reverse proxy
+## 4. Nginx reverse proxy dan HTTPS
 
-Pasang Nginx pada host:
+Pasang Nginx:
 
 ```bash
 sudo apt update
 sudo apt install -y nginx
 ```
 
-Buat server block yang meneruskan request ke `http://127.0.0.1:8080`. Sertakan header `Host`, `X-Real-IP`, `X-Forwarded-For`, dan `X-Forwarded-Proto`. Jalankan `sudo nginx -t` sebelum reload.
+Pastikan domain, misalnya `api.example.com`, memiliki DNS A record yang mengarah ke public IP VM. HTTPS production memerlukan domain yang dapat dijangkau dari internet.
 
-Untuk production, gunakan HTTPS. Let's Encrypt memerlukan domain yang mengarah ke public IP VM. Jika domain belum tersedia, lakukan pengujian melalui SSH tunnel:
+Salin template `deploy/nginx/leksin.conf.example` ke:
+
+```text
+/etc/nginx/sites-available/leksin
+```
+
+Ganti semua kemunculan `api.example.com` dengan domain milik sendiri. Buat sertifikat Let's Encrypt sebelum mengaktifkan konfigurasi HTTPS. Salah satu cara adalah memasang Certbot, menerbitkan sertifikat untuk domain tersebut, lalu mengaktifkan site:
+
+```bash
+sudo apt install -y certbot
+sudo certbot certonly --webroot -w /var/www/html -d api.example.com
+sudo ln -s /etc/nginx/sites-available/leksin /etc/nginx/sites-enabled/leksin
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+Pastikan direktori webroot tersedia sebelum menjalankan Certbot:
+
+```bash
+sudo mkdir -p /var/www/html
+```
+
+Template Nginx meneruskan request ke `http://127.0.0.1:8080` dan mengirim header proxy yang diperlukan. Perpanjangan sertifikat Certbot perlu aktif; periksa dengan `sudo certbot renew --dry-run`.
+
+Jika domain belum tersedia, gunakan SSH tunnel untuk pengujian dari komputer lokal:
 
 ```bash
 ssh -L 8080:127.0.0.1:8080 <VM_USER>@<VM_PUBLIC_IP>
@@ -152,7 +176,7 @@ Periksa log dan health check setelah pembaruan. Backup database sebelum perubaha
 
 ## 9. Keamanan dan operasional
 
-- Ganti seluruh placeholder pada `.env`.
+- Ganti seluruh placeholder pada `.env` dan konfigurasi Nginx.
 - Simpan backup PostgreSQL di luar VM; volume Docker bukan backup.
 - Jangan expose PostgreSQL atau detail actuator ke publik.
 - Gunakan HTTPS untuk seluruh trafik production.
