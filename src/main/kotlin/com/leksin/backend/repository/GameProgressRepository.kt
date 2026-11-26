@@ -6,4 +6,6 @@ import java.util.UUID
 
 interface GameProgressRepository : JpaRepository<GameProgress, UUID> {
     fun findByChildId(childId: UUID): GameProgress?
+
+    fun deleteAllByChildId(childId: UUID)
 }

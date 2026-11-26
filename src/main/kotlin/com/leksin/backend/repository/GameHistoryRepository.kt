@@ -24,4 +24,6 @@ interface GameHistoryRepository : JpaRepository<GameHistory, UUID> {
         @Param("childId") childId: UUID,
         @Param("level") level: Int,
     ): Int
+
+    fun deleteAllByChildId(childId: UUID)
 }
