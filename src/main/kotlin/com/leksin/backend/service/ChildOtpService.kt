@@ -11,6 +11,7 @@ import com.leksin.backend.repository.ChildOtpRepository
 import com.leksin.backend.repository.ChildRepository
 import com.leksin.backend.security.JwtService
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.mail.MailException
 import org.springframework.mail.SimpleMailMessage
 import org.springframework.mail.javamail.JavaMailSender
@@ -30,6 +31,8 @@ class ChildOtpService(
     private val childOtpRepository: ChildOtpRepository,
     private val passwordEncoder: PasswordEncoder,
     private val emailSender: JavaMailSender,
+    @Value($$"${app.mail.from}")
+    private val senderAddress: String,
     private val clock: Clock,
     private val jwtService: JwtService,
 ) {
@@ -38,10 +41,10 @@ class ChildOtpService(
     private val logger = LoggerFactory.getLogger(ChildOtpService::class.java)
 
     private companion object {
-        const val MAX_FAILED_ATTEMPTS = 3
+        const val MAX_FAILED_ATTEMPTS = 5
         const val OTP_EXPIRATION_PERIOD = 1L
         const val MAX_OTP_REQUESTS = 3
-        val OTP_REQUEST_WINDOW: Duration = Duration.ofMinutes(10)
+        val OTP_REQUEST_WINDOW: Duration = Duration.ofMinutes(5)
     }
 
     @Transactional
@@ -115,12 +118,14 @@ class ChildOtpService(
         try {
             emailSender.send(buildOtpEmail(recipient, code))
         } catch (e: MailException) {
-            logger.error("Gagal mengirim email OTP: {}", e.javaClass.simpleName)
+            logger.error("Gagal mengirim email OTP: ${e.message} | sender: $senderAddress")
+            throw e
         }
     }
 
     private fun buildOtpEmail(recipient: String, code: String) =
         SimpleMailMessage().apply {
+            from = senderAddress
             setTo(recipient)
             subject = "LEKSIN Child Login OTP"
             text = "Your login code is $code.\nIt expires in $OTP_EXPIRATION_PERIOD minutes."
