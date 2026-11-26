@@ -2,6 +2,7 @@ services:
   - type: web
     name: leksin-backend
     runtime: docker
+    region: singapore
     plan: starter
     healthCheckPath: /actuator/health
     envVars:
@@ -44,6 +45,8 @@ services:
 
 databases:
   - name: leksin-db
+    region: singapore
     plan: basic-256mb
     databaseName: leksin
     user: leksin
+    ipAllowList: []
