@@ -7,12 +7,26 @@ Dokumen ini menjadi kontrak integrasi sementara antara aplikasi Android Kotlin/J
 | Lingkungan | Base URL |
 |---|---|
 | Android Emulator ke backend lokal | `http://10.0.2.2:8080/` |
-| Perangkat fisik ke backend lokal | `http://<LAN-IP-komputer>:8080/` |
-| Production | `https://<render-service>.onrender.com/` |
+| Perangkat fisik via USB (ADB reverse) | `http://localhost:8080/` |
+| Perangkat fisik melalui Wi-Fi/LAN | `http://<LAN-IP-komputer>:8080/` |
+| Production (Ubuntu VM + Nginx + Cloudflare) | `https://api.example.com/` |
 
-Gunakan base URL dengan trailing slash untuk Retrofit. Ganti URL production dengan domain aktual setelah deployment. Android native tidak terkena aturan browser CORS. Untuk production, gunakan HTTPS.
+Gunakan base URL dengan trailing slash untuk Retrofit. Untuk production, ganti `api.example.com` dengan domain API yang benar-benar dikonfigurasi pada Cloudflare dan Nginx mengikuti [panduan remote VM deployment](VM_DEPLOYMENT.md). Repository ini menggunakan target deployment Ubuntu VM; URL Render tidak lagi menjadi alamat production pada panduan ini.
 
-Untuk pengujian HTTP lokal, Android perlu mengizinkan cleartext traffic pada build debug. Jangan aktifkan cleartext secara global pada build release.
+Android native tidak terkena aturan browser CORS. Untuk pengujian HTTP lokal, Android perlu mengizinkan cleartext traffic pada build debug. Jangan aktifkan cleartext secara global pada build release.
+
+### Perangkat fisik melalui USB
+
+Jalankan backend lokal melalui Docker Compose di komputer pengembangan. Aktifkan **Developer options** dan **USB debugging** pada perangkat Android, sambungkan melalui USB, lalu jalankan:
+
+```bash
+adb devices
+adb reverse tcp:8080 tcp:8080
+```
+
+Atur base URL Android menjadi `http://localhost:8080/`. ADB meneruskan koneksi port 8080 pada perangkat ke port 8080 komputer. Ulangi perintah `adb reverse` setelah koneksi ADB terputus atau perangkat tersambung ulang.
+
+Alternatifnya, gunakan alamat IP LAN komputer jika perangkat dan komputer berada pada jaringan yang sama. Pastikan firewall komputer mengizinkan koneksi ke port backend. Production wajib menggunakan HTTPS.
 
 ## 2. Format umum
 
