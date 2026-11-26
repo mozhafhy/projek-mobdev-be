@@ -19,8 +19,8 @@ Daftar ini memberi gambaran urutan kerja. Ganti semua placeholder sebelum menjal
 ### A. Dari komputer administrator
 
 ```bash
-# Setelah membeli domain, tambahkan domain ke Cloudflare dan ganti nameserver di registrar.
-# Buat DNS A record: api -> public IPv4 VM; aktifkan proxy setelah DNS terverifikasi.
+# Daftarkan domain, tambahkan ke Cloudflare, lalu ubah nameserver di registrar.
+# Buat DNS A record: api -> public IPv4 VM.
 ssh <VM_USER>@<VM_PUBLIC_IP>
 ```
 
@@ -29,15 +29,16 @@ ssh <VM_USER>@<VM_PUBLIC_IP>
 ```bash
 sudo apt update && sudo apt upgrade -y
 sudo apt install -y ca-certificates curl git openssl nginx certbot
-chmod +x scripts/check-remote-env.sh
-./scripts/check-remote-env.sh api.example.com
-# Pasang Docker Engine dan Docker Compose plugin mengikuti repositori resmi Docker.
+# Pasang Docker Engine dan Docker Compose plugin dari repository resmi Docker.
+sudo systemctl enable --now docker
 docker --version
 docker compose version
 sudo mkdir -p /opt/leksin
 sudo chown "$USER":"$USER" /opt/leksin
 git clone https://github.com/mozhafhy/projek-mobdev-be.git /opt/leksin
 cd /opt/leksin
+chmod +x scripts/check-remote-env.sh
+./scripts/check-remote-env.sh api.example.com
 cp .env.example .env
 openssl rand -base64 32
 # Edit .env: set DB_PASSWORD, JWT_SECRET, dan kredensial Brevo SMTP.
@@ -131,18 +132,7 @@ Target awal:
 
 Gunakan SSH key, bukan password login, bila penyedia VM mendukungnya. Batasi akses SSH ke IP administrator bila alamat IP tersebut stabil.
 
-### 2.2 Pemeriksaan kompatibilitas
-
-Jalankan checker sebelum instalasi dan deployment:
-
-```bash
-chmod +x scripts/check-remote-env.sh
-./scripts/check-remote-env.sh api.example.com
-```
-
-Checker memeriksa OS, arsitektur, CPU, RAM, storage, Docker, Docker Compose, akses Docker daemon, tool dasar, port layanan, firewall UFW, dan resolusi DNS domain. Hasilnya berupa PASS/WARN/FAIL; checker tidak mengubah konfigurasi server.
-
-### 2.3 Update sistem dan pasang tool dasar
+### 2.2 Update sistem dan pasang tool dasar
 
 ```bash
 sudo apt update
@@ -167,31 +157,22 @@ sudo usermod -aG docker "$USER"
 
 Keluar dari SSH lalu login kembali agar keanggotaan grup diterapkan. Keanggotaan grup Docker setara dengan hak root pada host; berikan hanya kepada administrator tepercaya.
 
-### 2.4 Jalankan environment checker
-
-Setelah Docker terpasang:
-
-```bash
-cd /opt/leksin
-./scripts/check-remote-env.sh api.example.com
-```
-
-Jangan lanjut sebelum seluruh pemeriksaan wajib berstatus PASS. Peringatan resource atau port perlu ditinjau sesuai kapasitas dan konfigurasi VM.
-
-## 3. Deploy backend dan PostgreSQL
-
-### 3.1 Clone repository
+### 2.3 Clone repository dan jalankan checker
 
 ```bash
 sudo mkdir -p /opt/leksin
 sudo chown "$USER":"$USER" /opt/leksin
 git clone https://github.com/mozhafhy/projek-mobdev-be.git /opt/leksin
 cd /opt/leksin
+chmod +x scripts/check-remote-env.sh
+./scripts/check-remote-env.sh api.example.com
 ```
 
-Jika direktori sudah berisi clone repository, gunakan `git pull` dari direktori tersebut. Jangan menjalankan clone kedua ke direktori yang sama.
+Checker memeriksa OS, arsitektur, CPU, RAM, storage, Docker, Docker Compose, akses Docker daemon, tool dasar, port layanan, firewall UFW, dan resolusi DNS domain. Hasilnya berupa PASS/WARN/FAIL; checker tidak mengubah konfigurasi server. Jangan lanjut sebelum seluruh pemeriksaan wajib berstatus PASS. Peringatan resource atau port perlu ditinjau sesuai kapasitas dan konfigurasi VM.
 
-### 3.2 Konfigurasi environment
+## 3. Deploy backend dan PostgreSQL
+
+### 3.1 Konfigurasi environment
 
 Buat file environment:
 
@@ -229,7 +210,7 @@ JWT_EXPIRATION_MS=86400000
 
 Gunakan SMTP login dan SMTP key dari halaman SMTP Brevo. `MAIL_FROM` harus berupa sender yang sudah diverifikasi. Jangan menggunakan Brevo API key sebagai password SMTP. Gunakan secret yang berbeda dari development dan jangan pernah commit `.env`.
 
-### 3.3 Build dan jalankan container
+### 3.2 Build dan jalankan container
 
 `compose.yaml` menjalankan backend dan PostgreSQL. Backend mengakses database melalui hostname Docker `database`; port PostgreSQL tidak dipublikasikan. Backend dipetakan ke loopback host agar hanya Nginx pada VM yang menjadi pintu masuk publik.
 
@@ -241,7 +222,7 @@ docker compose logs -f backend
 curl -fsS http://127.0.0.1:8080/actuator/health
 ```
 
-Health check harus mengembalikan status UP. Jika gagal, periksa log backend dan database:
+Docker build menjalankan automated tests melalui Gradle Wrapper sebelum membuat executable JAR. Health check harus mengembalikan status UP. Jika gagal, periksa log backend dan database:
 
 ```bash
 docker compose logs --tail=200 backend
