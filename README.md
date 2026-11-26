@@ -26,6 +26,7 @@ REST API untuk aplikasi pembelajaran LEKSIN. Backend menggunakan Kotlin, Spring 
 | `DB_PASSWORD` | `your-local-password` | Password database |
 | `DB_POOL_SIZE` | `5` | Opsional: maksimum koneksi pool |
 | `JWT_SECRET` | Base64 key minimal 32 byte | Kunci signing JWT |
+| `JWT_EXPIRATION_MS` | `86400000` | Opsional: masa berlaku JWT dalam milidetik |
 | `MAIL_HOST` | `smtp.gmail.com` | Gmail SMTP host |
 | `MAIL_PORT` | `587` | Gmail SMTP port dengan STARTTLS |
 | `MAIL_USERNAME` | alamat Gmail lengkap | Akun Gmail pengirim |
@@ -47,13 +48,23 @@ Buat JWT secret lokal dengan:
 openssl rand -base64 32
 ```
 
-4. Jalankan:
+4. Jalankan test dan build:
+
+```bash
+./gradlew clean test bootJar
+```
+
+5. Jalankan aplikasi:
 
 ```bash
 ./gradlew bootRun
 ```
 
 API berjalan pada `http://localhost:8080`. Health check: `GET /actuator/health`.
+
+## Pengujian
+
+Test memakai konfigurasi profile `test` dengan H2. Jalankan `./gradlew test`; PostgreSQL lokal tidak diperlukan untuk test tersebut.
 
 ## Dokumentasi integrasi Android
 
@@ -66,5 +77,7 @@ Lihat [Render Deployment](docs/RENDER_DEPLOYMENT.md). Repository sudah menyediak
 ## Catatan MVP
 
 - OCR dan evaluasi tulisan direncanakan berjalan di perangkat Android. Backend menerima metadata hasil permainan, bukan foto tulisan.
+- Logout tersedia melalui `POST /api/auth/logout`; backend mencabut JWT yang sedang digunakan.
+- Belum tersedia refresh token. Setelah JWT kedaluwarsa, pengguna harus login kembali.
 - Endpoint pencatatan permainan saat ini menerima `starsEarned` dan `completed` dari client. Nilai tersebut belum dapat dianggap anti-cheat. Jangan gunakan sebagai dasar reward bernilai uang atau keputusan berisiko sebelum validasi hasil dipindahkan atau diverifikasi di server.
 - Skema database saat ini menggunakan Hibernate `ddl-auto=update` untuk mempercepat MVP. Gunakan migration tool seperti Flyway sebelum perubahan skema production yang lebih serius.
