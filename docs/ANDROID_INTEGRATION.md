@@ -194,7 +194,7 @@ Response `200 OK`:
 }
 ```
 
-Respons sengaja tidak mengungkap apakah akun ditemukan. OTP dikirim ke email parent, berlaku 1 menit, dan maksimal 3 permintaan dalam 10 menit per child.
+Respons sengaja tidak mengungkap apakah akun ditemukan. OTP dikirim ke email parent, berlaku 1 menit, dan maksimal 3 permintaan dalam 3 menit per child.
 
 ### Verifikasi OTP
 
@@ -204,7 +204,7 @@ Respons sengaja tidak mengungkap apakah akun ditemukan. OTP dikirim ke email par
 {
   "parentUsername": "parent01",
   "nickname": "Alya",
-  "code": "0123"
+  "code": "012345"
 }
 ```
 
