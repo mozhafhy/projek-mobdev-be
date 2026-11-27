@@ -12,6 +12,7 @@ data class ChildOtpVerifyRequest(
     @field:Size(min = 2, max = 32)
     val nickname: String,
 
-    @field:Pattern(regexp = "^\\d{4}$")
+    @field:NotBlank
+    @field:Pattern(regexp = "^\\d{6}$")
     val code: String,
 )
