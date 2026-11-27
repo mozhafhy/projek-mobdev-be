@@ -8,6 +8,8 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito
+import org.mockito.kotlin.any
+import org.mockito.kotlin.argThat
 import java.time.LocalDate
 import java.time.ZoneId
 import java.util.Optional
@@ -44,11 +46,11 @@ class GameServiceTest {
         )
         Mockito.`when`(childRepository.findById(child.id!!))
             .thenReturn(Optional.of(child))
-        Mockito.`when`(historyRepository.save(Mockito.any(GameHistory::class.java)))
+        Mockito.`when`(historyRepository.save(any<GameHistory>()))
             .thenAnswer { it.getArgument(0) }
-        Mockito.`when`(modeProgressRepository.save(Mockito.any(GameModeProgress::class.java)))
+        Mockito.`when`(modeProgressRepository.save(any<GameModeProgress>()))
             .thenAnswer { it.getArgument(0) }
-        Mockito.`when`(progressRepository.save(Mockito.any(GameProgress::class.java)))
+        Mockito.`when`(progressRepository.save(any<GameProgress>()))
             .thenAnswer { it.getArgument(0) }
         Mockito.`when`(historyRepository.findBestStars(child.id!!, GameType.WORD_SCRAMBLE, 1))
             .thenReturn(0)
@@ -64,12 +66,12 @@ class GameServiceTest {
 
         assertEquals(GameType.WORD_SCRAMBLE, response.gameType)
         assertEquals(2, response.starsEarned)
-        Mockito.verify(modeProgressRepository).save(Mockito.argThat<GameModeProgress> {
+        Mockito.verify(modeProgressRepository).save(argThat<GameModeProgress> {
             it.gameType == GameType.WORD_SCRAMBLE &&
                 it.highestLevel == 1 &&
                 it.totalStars == 2
         })
-        Mockito.verify(progressRepository).save(Mockito.argThat<GameProgress> {
+        Mockito.verify(progressRepository).save(argThat<GameProgress> {
             it.highestLevel == 1 &&
                 it.totalStars == 2 &&
                 it.currentStreak == 1 &&
