@@ -11,6 +11,7 @@ import com.leksin.backend.exception.ParentNotFoundException
 import com.leksin.backend.repository.ChildOtpRepository
 import com.leksin.backend.repository.ChildRepository
 import com.leksin.backend.repository.GameHistoryRepository
+import com.leksin.backend.repository.GameModeProgressRepository
 import com.leksin.backend.repository.GameProgressRepository
 import com.leksin.backend.repository.ParentRepository
 import org.springframework.stereotype.Service
@@ -25,6 +26,7 @@ class ChildService(
     private val childOtpRepository: ChildOtpRepository,
     private val gameHistoryRepository: GameHistoryRepository,
     private val gameProgressRepository: GameProgressRepository,
+    private val gameModeProgressRepository: GameModeProgressRepository,
 ) {
 
     @Transactional
@@ -64,6 +66,7 @@ class ChildService(
     private fun deleteChildData(childId: UUID) {
         childOtpRepository.deleteAllByChildId(childId)
         gameHistoryRepository.deleteAllByChildId(childId)
+        gameModeProgressRepository.deleteAllByChildId(childId)
         gameProgressRepository.deleteAllByChildId(childId)
     }
 
