@@ -222,6 +222,7 @@ Semua endpoint membutuhkan JWT milik child terkait atau JWT parent pemilik child
 
 ```json
 {
+  "gameType": "WORD_SCRAMBLE",
   "level": 1,
   "durationSeconds": 95,
   "attempts": 2,
@@ -235,6 +236,7 @@ Response `201 Created`:
 ```json
 {
   "id": "<history-uuid>",
+  "gameType": "WORD_SCRAMBLE",
   "level": 1,
   "durationSeconds": 95,
   "attempts": 2,
@@ -244,7 +246,7 @@ Response `201 Created`:
 }
 ```
 
-Validasi: level 1-26, durationSeconds minimal 0, attempts minimal 1, starsEarned 0-3. Sesi yang tidak selesai wajib mengirim `starsEarned: 0`.
+Validasi: `gameType` wajib bernilai `WORD_SCRAMBLE` atau `HANDWRITING`; level 1-26, durationSeconds minimal 0, attempts minimal 1, starsEarned 0-3. Sesi yang tidak selesai wajib mengirim `starsEarned: 0`.
 
 Backend menambah `totalStars` hanya sebesar peningkatan bintang terbaik untuk level yang sama. Streak dihitung berdasarkan hari kalender `Asia/Jakarta`, dan hanya sesi yang selesai memperbarui streak.
 
@@ -254,7 +256,7 @@ Backend menambah `totalStars` hanya sebesar peningkatan bintang terbaik untuk le
 
 `GET /api/child/{childId}/games/history`
 
-Response `200 OK`: array `GameHistoryResponse`, urut dari sesi terbaru ke terlama.
+Response `200 OK`: array `GameHistoryResponse`, urut dari sesi terbaru ke terlama. Gunakan query parameter opsional `gameType` untuk memfilter, misalnya `?gameType=HANDWRITING`.
 
 ### Progress
 
@@ -273,7 +275,13 @@ Response `200 OK`:
 }
 ```
 
-Jika child belum memiliki progress, backend mengembalikan nilai angka `0` dan `lastActivityDate: null`.
+Progress di endpoint ini merupakan agregat kedua mode. Jika child belum memiliki progress, backend mengembalikan nilai angka `0` dan `lastActivityDate: null`.
+
+### Progress per jenis game
+
+`GET /api/child/{childId}/games/progress/{gameType}`
+
+Nilai `gameType` adalah `WORD_SCRAMBLE` atau `HANDWRITING`. Response berisi `childId`, `gameType`, `highestLevel`, dan `totalStars`; nilai awal keduanya adalah `0`. Bintang per mode dihitung berdasarkan peningkatan skor terbaik pada level yang sama. Streak tetap dihitung secara global dari sesi selesai kedua mode.
 
 ## 7. Logout
 
@@ -331,12 +339,36 @@ data class ChildResponse(
     val nickname: String,
 )
 
+enum class GameType {
+    WORD_SCRAMBLE,
+    HANDWRITING,
+}
+
 data class GameSessionRequest(
+    val gameType: GameType,
     val level: Int,
     val durationSeconds: Int,
     val attempts: Int,
     val starsEarned: Int,
     val completed: Boolean,
+)
+
+data class GameHistoryResponse(
+    val id: String,
+    val gameType: GameType,
+    val level: Int,
+    val durationSeconds: Int,
+    val attempts: Int,
+    val starsEarned: Int,
+    val completed: Boolean,
+    val playedAt: String,
+)
+
+data class GameModeProgressResponse(
+    val childId: String,
+    val gameType: GameType,
+    val highestLevel: Int,
+    val totalStars: Int,
 )
 
 data class GameProgressResponse(
@@ -406,7 +438,14 @@ interface LeksinApi {
     @GET("api/child/{childId}/games/history")
     suspend fun getGameHistory(
         @Path("childId") childId: String,
+        @Query("gameType") gameType: GameType? = null,
     ): List<GameHistoryResponse>
+
+    @GET("api/child/{childId}/games/progress/{gameType}")
+    suspend fun getGameModeProgress(
+        @Path("childId") childId: String,
+        @Path("gameType") gameType: GameType,
+    ): GameModeProgressResponse
 
     @GET("api/child/{childId}/games/progress")
     suspend fun getGameProgress(
