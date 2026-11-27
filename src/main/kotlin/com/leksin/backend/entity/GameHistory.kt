@@ -15,6 +15,10 @@ class GameHistory(
         nullable = false
     ) var child: Children,
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "game_type", nullable = false, length = 32)
+    var gameType: GameType,
+
     @Column(nullable = false) var level: Int,
 
     @Column(nullable = false) var durationSeconds: Int,
@@ -30,6 +34,7 @@ class GameHistory(
 
 fun GameHistory.toResponse() = GameHistoryResponse(
     id = this.id!!,
+    gameType = this.gameType,
     level = this.level,
     durationSeconds = this.durationSeconds,
     attempts = this.attempts,
