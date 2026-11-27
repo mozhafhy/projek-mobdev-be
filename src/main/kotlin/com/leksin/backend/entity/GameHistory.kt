@@ -16,7 +16,12 @@ class GameHistory(
     ) var child: Children,
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "game_type", nullable = false, length = 32)
+    @Column(
+        name = "game_type",
+        nullable = false,
+        length = 32,
+        columnDefinition = "varchar(32) default 'WORD_SCRAMBLE'",
+    )
     var gameType: GameType,
 
     @Column(nullable = false) var level: Int,
