@@ -38,7 +38,7 @@ class GameService(
             "Incomplete sessions cannot earn stars"
         }
 
-        val child = childRepository.findById(childId).orElseThrow { ChildNotFoundException() }
+        val child = childRepository.lockById(childId) ?: throw ChildNotFoundException()
 
         val previousBestStars = gameHistoryRepository.findBestStars(
             childId = childId,
