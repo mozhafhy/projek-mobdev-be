@@ -36,21 +36,21 @@ class ResourceAuthorizationServiceTest {
 
     @Test
     fun parentCanAccessOwnChild() {
-        Mockito.\`when\`(childRepository.findById(childId)).thenReturn(Optional.of(child))
+        Mockito.`when`(childRepository.findById(childId)).thenReturn(Optional.of(child))
 
         service.requireChildAccess(childId, authentication(parentId, Role.PARENT))
     }
 
     @Test
     fun childCanAccessOwnResource() {
-        Mockito.\`when\`(childRepository.findById(childId)).thenReturn(Optional.of(child))
+        Mockito.`when`(childRepository.findById(childId)).thenReturn(Optional.of(child))
 
         service.requireChildAccess(childId, authentication(childId, Role.CHILD))
     }
 
     @Test
     fun unrelatedParentCannotAccessChild() {
-        Mockito.\`when\`(childRepository.findById(childId)).thenReturn(Optional.of(child))
+        Mockito.`when`(childRepository.findById(childId)).thenReturn(Optional.of(child))
 
         assertFailsWith<AccessDeniedException> {
             service.requireChildAccess(childId, authentication(otherUserId, Role.PARENT))
@@ -59,7 +59,7 @@ class ResourceAuthorizationServiceTest {
 
     @Test
     fun childCannotAccessAnotherChildResource() {
-        Mockito.\`when\`(childRepository.findById(childId)).thenReturn(Optional.of(child))
+        Mockito.`when`(childRepository.findById(childId)).thenReturn(Optional.of(child))
 
         assertFailsWith<AccessDeniedException> {
             service.requireChildAccess(childId, authentication(otherUserId, Role.CHILD))
@@ -68,7 +68,7 @@ class ResourceAuthorizationServiceTest {
 
     @Test
     fun parentCannotUseAnotherParentsProfile() {
-        Mockito.\`when\`(parentRepository.findById(parentId)).thenReturn(Optional.of(parent))
+        Mockito.`when`(parentRepository.findById(parentId)).thenReturn(Optional.of(parent))
 
         assertFailsWith<AccessDeniedException> {
             service.requireOwnParentProfile("someone-else", authentication(parentId, Role.PARENT))
