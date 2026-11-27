@@ -64,12 +64,16 @@ class GameServiceTest {
 
         assertEquals(GameType.WORD_SCRAMBLE, response.gameType)
         assertEquals(2, response.starsEarned)
-        Mockito.verify(modeProgressRepository).save(Mockito.argThat {
-            gameType == GameType.WORD_SCRAMBLE && highestLevel == 1 && totalStars == 2
+        Mockito.verify(modeProgressRepository).save(Mockito.argThat<GameModeProgress> {
+            it.gameType == GameType.WORD_SCRAMBLE &&
+                it.highestLevel == 1 &&
+                it.totalStars == 2
         })
-        Mockito.verify(progressRepository).save(Mockito.argThat {
-            highestLevel == 1 && totalStars == 2 &&
-                currentStreak == 1 && lastActivityDate == today
+        Mockito.verify(progressRepository).save(Mockito.argThat<GameProgress> {
+            it.highestLevel == 1 &&
+                it.totalStars == 2 &&
+                it.currentStreak == 1 &&
+                it.lastActivityDate == today
         })
     }
 
@@ -98,8 +102,8 @@ class GameServiceTest {
 
         service.recordSession(child.id!!, request())
 
-        Mockito.verify(modeProgressRepository).save(Mockito.argThat { totalStars == 2 })
-        Mockito.verify(progressRepository).save(Mockito.argThat { totalStars == 2 })
+        Mockito.verify(modeProgressRepository).save(Mockito.argThat<GameModeProgress> { it.totalStars == 2 })
+        Mockito.verify(progressRepository).save(Mockito.argThat<GameProgress> { it.totalStars == 2 })
     }
 
     @Test
@@ -110,10 +114,10 @@ class GameServiceTest {
         service.recordSession(child.id!!, request(GameType.HANDWRITING, 3))
 
         Mockito.verify(historyRepository).findBestStars(child.id!!, GameType.HANDWRITING, 1)
-        Mockito.verify(modeProgressRepository).save(Mockito.argThat {
-            gameType == GameType.HANDWRITING && totalStars == 3
+        Mockito.verify(modeProgressRepository).save(Mockito.argThat<GameModeProgress> {
+            it.gameType == GameType.HANDWRITING && it.totalStars == 3
         })
-        Mockito.verify(progressRepository).save(Mockito.argThat { totalStars == 3 })
+        Mockito.verify(progressRepository).save(Mockito.argThat<GameProgress> { it.totalStars == 3 })
     }
 
     @Test
