@@ -1,14 +1,18 @@
 package com.leksin.backend.service
 
-import com.leksin.backend.dto.response.GameHistoryResponse
-import com.leksin.backend.dto.response.GameProgressResponse
 import com.leksin.backend.dto.request.GameSessionRequest
+import com.leksin.backend.dto.response.GameHistoryResponse
+import com.leksin.backend.dto.response.GameModeProgressResponse
+import com.leksin.backend.dto.response.GameProgressResponse
 import com.leksin.backend.entity.GameHistory
+import com.leksin.backend.entity.GameModeProgress
 import com.leksin.backend.entity.GameProgress
+import com.leksin.backend.entity.GameType
 import com.leksin.backend.entity.toResponse
 import com.leksin.backend.exception.ChildNotFoundException
 import com.leksin.backend.repository.ChildRepository
 import com.leksin.backend.repository.GameHistoryRepository
+import com.leksin.backend.repository.GameModeProgressRepository
 import com.leksin.backend.repository.GameProgressRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -21,6 +25,7 @@ class GameService(
     private val childRepository: ChildRepository,
     private val gameHistoryRepository: GameHistoryRepository,
     private val gameProgressRepository: GameProgressRepository,
+    private val gameModeProgressRepository: GameModeProgressRepository,
 ) {
     private val applicationZone = ZoneId.of("Asia/Jakarta")
 
@@ -35,11 +40,16 @@ class GameService(
 
         val child = childRepository.findById(childId).orElseThrow { ChildNotFoundException() }
 
-        val previousBestStars = gameHistoryRepository.findBestStars(childId, request.level)
+        val previousBestStars = gameHistoryRepository.findBestStars(
+            childId = childId,
+            gameType = request.gameType,
+            level = request.level,
+        )
 
         val history = gameHistoryRepository.save(
             GameHistory(
                 child = child,
+                gameType = request.gameType,
                 level = request.level,
                 durationSeconds = request.durationSeconds,
                 attempts = request.attempts,
@@ -48,24 +58,32 @@ class GameService(
             )
         )
 
-        val progress = gameProgressRepository.findByChildId(childId) ?: GameProgress(child = child)
-
         if (request.completed) {
-            updateProgress(progress, request, previousBestStars)
+            val earnedStars = newStarsEarned(request.starsEarned, previousBestStars)
+            updateModeProgress(childId, child, request, earnedStars)
+            updateOverallProgress(child, request, earnedStars)
         }
-
-        gameProgressRepository.save(progress)
 
         return history.toResponse()
     }
 
     @Transactional(readOnly = true)
-    fun getHistory(childId: UUID): List<GameHistoryResponse> {
+    fun getHistory(
+        childId: UUID,
+        gameType: GameType?,
+    ): List<GameHistoryResponse> {
         requireChildExists(childId)
 
-        return gameHistoryRepository
-            .findAllByChildIdOrderByPlayedAtDesc(childId)
-            .map { it.toResponse() }
+        val history = if (gameType == null) {
+            gameHistoryRepository.findAllByChildIdOrderByPlayedAtDesc(childId)
+        } else {
+            gameHistoryRepository.findAllByChildIdAndGameTypeOrderByPlayedAtDesc(
+                childId,
+                gameType,
+            )
+        }
+
+        return history.map { it.toResponse() }
     }
 
     @Transactional(readOnly = true)
@@ -74,6 +92,52 @@ class GameService(
 
         return gameProgressRepository.findByChildId(childId)?.toResponse()
             ?: emptyProgress(childId)
+    }
+
+    @Transactional(readOnly = true)
+    fun getModeProgress(
+        childId: UUID,
+        gameType: GameType,
+    ): GameModeProgressResponse {
+        requireChildExists(childId)
+
+        return gameModeProgressRepository.findByChildIdAndGameType(childId, gameType)
+            ?.toResponse()
+            ?: GameModeProgressResponse(
+                childId = childId,
+                gameType = gameType,
+                highestLevel = 0,
+                totalStars = 0,
+            )
+    }
+
+    private fun updateModeProgress(
+        childId: UUID,
+        child: com.leksin.backend.entity.Children,
+        request: GameSessionRequest,
+        earnedStars: Int,
+    ) {
+        val progress = gameModeProgressRepository.findByChildIdAndGameType(
+            childId,
+            request.gameType,
+        ) ?: GameModeProgress(child = child, gameType = request.gameType)
+
+        progress.highestLevel = maxOf(progress.highestLevel, request.level)
+        progress.totalStars += earnedStars
+        gameModeProgressRepository.save(progress)
+    }
+
+    private fun updateOverallProgress(
+        child: com.leksin.backend.entity.Children,
+        request: GameSessionRequest,
+        earnedStars: Int,
+    ) {
+        val progress = gameProgressRepository.findByChildId(child.id!!) ?: GameProgress(child = child)
+
+        progress.highestLevel = maxOf(progress.highestLevel, request.level)
+        progress.totalStars += earnedStars
+        updateStreak(progress)
+        gameProgressRepository.save(progress)
     }
 
     private fun requireChildExists(childId: UUID) {
@@ -90,16 +154,6 @@ class GameService(
         longestStreak = 0,
         lastActivityDate = null,
     )
-
-    private fun updateProgress(
-        progress: GameProgress,
-        request: GameSessionRequest,
-        previousBestStars: Int,
-    ) {
-        progress.highestLevel = maxOf(progress.highestLevel, request.level)
-        progress.totalStars += newStarsEarned(request.starsEarned, previousBestStars)
-        updateStreak(progress)
-    }
 
     private fun newStarsEarned(
         starsEarned: Int,
