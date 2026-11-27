@@ -8,8 +8,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito
-import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.junit.jupiter.MockitoExtension
 import java.time.LocalDate
 import java.time.ZoneId
 import java.util.Optional
@@ -18,7 +16,6 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-@ExtendWith(MockitoExtension::class)
 class GameServiceTest {
     private val childRepository = Mockito.mock(ChildRepository::class.java)
     private val historyRepository = Mockito.mock(GameHistoryRepository::class.java)
@@ -59,6 +56,9 @@ class GameServiceTest {
 
     @Test
     fun completedSessionUpdatesModeAndGlobalProgress() {
+        Mockito.`when`(historyRepository.findBestStars(child.id!!, GameType.WORD_SCRAMBLE, 1))
+            .thenReturn(0)
+
         val response = service.recordSession(child.id!!, request())
         val today = LocalDate.now(ZoneId.of("Asia/Jakarta"))
 
@@ -143,6 +143,7 @@ class GameServiceTest {
 
     @Test
     fun historyCanBeFilteredByGameType() {
+        Mockito.`when`(childRepository.existsById(child.id!!)).thenReturn(true)
         Mockito.\`when\`(
             historyRepository.findAllByChildIdAndGameTypeOrderByPlayedAtDesc(
                 child.id!!,
