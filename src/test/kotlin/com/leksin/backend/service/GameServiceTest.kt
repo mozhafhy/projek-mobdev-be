@@ -3,17 +3,18 @@ package com.leksin.backend.service
 import com.leksin.backend.dto.request.GameSessionRequest
 import com.leksin.backend.entity.*
 import com.leksin.backend.exception.ChildNotFoundException
-import com.leksin.backend.repository.*
+import com.leksin.backend.repository.ChildRepository
+import com.leksin.backend.repository.GameHistoryRepository
+import com.leksin.backend.repository.GameModeProgressRepository
+import com.leksin.backend.repository.GameProgressRepository
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito
-import org.mockito.kotlin.any
-import org.mockito.kotlin.argThat
+import org.springframework.test.util.ReflectionTestUtils
 import java.time.LocalDate
 import java.time.ZoneId
-import java.util.Optional
-import java.util.UUID
+import java.util.*
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -44,13 +45,13 @@ class GameServiceTest {
             progressRepository,
             modeProgressRepository,
         )
-        Mockito.`when`(childRepository.findById(child.id!!))
-            .thenReturn(Optional.of(child))
-        Mockito.`when`(historyRepository.save(any<GameHistory>()))
+        Mockito.`when`(childRepository.lockById(child.id!!))
+            .thenReturn(child)
+        Mockito.`when`(historyRepository.save(Mockito.any(GameHistory::class.java)))
+            .thenAnswer { simulatePersist(it.getArgument(0)) }
+        Mockito.`when`(modeProgressRepository.save(Mockito.any(GameModeProgress::class.java)))
             .thenAnswer { it.getArgument(0) }
-        Mockito.`when`(modeProgressRepository.save(any<GameModeProgress>()))
-            .thenAnswer { it.getArgument(0) }
-        Mockito.`when`(progressRepository.save(any<GameProgress>()))
+        Mockito.`when`(progressRepository.save(Mockito.any(GameProgress::class.java)))
             .thenAnswer { it.getArgument(0) }
         Mockito.`when`(historyRepository.findBestStars(child.id!!, GameType.WORD_SCRAMBLE, 1))
             .thenReturn(0)
@@ -66,46 +67,27 @@ class GameServiceTest {
 
         assertEquals(GameType.WORD_SCRAMBLE, response.gameType)
         assertEquals(2, response.starsEarned)
-        Mockito.verify(modeProgressRepository).save(argThat<GameModeProgress> {
+        Mockito.verify(modeProgressRepository).save(Mockito.argThat {
             it.gameType == GameType.WORD_SCRAMBLE &&
-                it.highestLevel == 1 &&
-                it.totalStars == 2
+                    it.highestLevel == 1 &&
+                    it.totalStars == 2
         })
-        Mockito.verify(progressRepository).save(argThat<GameProgress> {
+        Mockito.verify(progressRepository).save(Mockito.argThat {
             it.highestLevel == 1 &&
-                it.totalStars == 2 &&
-                it.currentStreak == 1 &&
-                it.lastActivityDate == today
+                    it.totalStars == 2 &&
+                    it.currentStreak == 1 &&
+                    it.lastActivityDate == today
         })
     }
 
     @Test
     fun replayingLevelOnlyAddsStarsAbovePreviousBest() {
-        Mockito.`when`(historyRepository.findBestStars(child.id!!, GameType.WORD_SCRAMBLE, 1))
-            .thenReturn(2)
-        val modeProgress = GameModeProgress(
-            child = child,
-            gameType = GameType.WORD_SCRAMBLE,
-            highestLevel = 1,
-            totalStars = 2,
-        )
-        val globalProgress = GameProgress(
-            child = child,
-            highestLevel = 1,
-            totalStars = 2,
-            currentStreak = 1,
-            longestStreak = 1,
-            lastActivityDate = LocalDate.now(ZoneId.of("Asia/Jakarta")),
-        )
-        Mockito.`when`(
-            modeProgressRepository.findByChildIdAndGameType(child.id!!, GameType.WORD_SCRAMBLE)
-        ).thenReturn(modeProgress)
-        Mockito.`when`(progressRepository.findByChildId(child.id!!)).thenReturn(globalProgress)
+        assertReplayTotalStars(previousBest = 1, starsEarned = 2, expectedTotal = 2)
+    }
 
-        service.recordSession(child.id!!, request())
-
-        Mockito.verify(modeProgressRepository).save(Mockito.argThat<GameModeProgress> { it.totalStars == 2 })
-        Mockito.verify(progressRepository).save(Mockito.argThat<GameProgress> { it.totalStars == 2 })
+    @Test
+    fun replayingLevelWithSameStarsAddsNothing() {
+        assertReplayTotalStars(previousBest = 2, starsEarned = 2, expectedTotal = 2)
     }
 
     @Test
@@ -116,10 +98,10 @@ class GameServiceTest {
         service.recordSession(child.id!!, request(GameType.HANDWRITING, 3))
 
         Mockito.verify(historyRepository).findBestStars(child.id!!, GameType.HANDWRITING, 1)
-        Mockito.verify(modeProgressRepository).save(Mockito.argThat<GameModeProgress> {
+        Mockito.verify(modeProgressRepository).save(Mockito.argThat {
             it.gameType == GameType.HANDWRITING && it.totalStars == 3
         })
-        Mockito.verify(progressRepository).save(Mockito.argThat<GameProgress> { it.totalStars == 3 })
+        Mockito.verify(progressRepository).save(Mockito.argThat { it.totalStars == 3 })
     }
 
     @Test
@@ -199,4 +181,45 @@ class GameServiceTest {
         starsEarned = starsEarned,
         completed = completed,
     )
+
+    private fun simulatePersist(history: GameHistory): GameHistory {
+        ReflectionTestUtils.setField(history, "id", UUID.randomUUID())
+        return history
+    }
+
+    private fun assertReplayTotalStars(previousBest: Int, starsEarned: Int, expectedTotal: Int) {
+        val modeProgress = GameModeProgress(
+            child = child,
+            gameType = GameType.WORD_SCRAMBLE,
+            highestLevel = 1,
+            totalStars = previousBest,
+        )
+        val globalProgress = GameProgress(
+            child = child,
+            highestLevel = 1,
+            totalStars = previousBest,
+        )
+        stubPreviousAttempt(previousBest, modeProgress, globalProgress)
+
+        service.recordSession(child.id!!, request(starsEarned = starsEarned))
+
+        assertEquals(expectedTotal, modeProgress.totalStars)
+        assertEquals(expectedTotal, globalProgress.totalStars)
+        Mockito.verify(modeProgressRepository).save(modeProgress)
+        Mockito.verify(progressRepository).save(globalProgress)
+    }
+
+    private fun stubPreviousAttempt(
+        bestStars: Int,
+        modeProgress: GameModeProgress,
+        globalProgress: GameProgress,
+    ) {
+        Mockito.`when`(historyRepository.findBestStars(child.id!!, GameType.WORD_SCRAMBLE, 1))
+            .thenReturn(bestStars)
+        Mockito.`when`(
+            modeProgressRepository.findByChildIdAndGameType(child.id!!, GameType.WORD_SCRAMBLE)
+        ).thenReturn(modeProgress)
+        Mockito.`when`(progressRepository.findByChildId(child.id!!))
+            .thenReturn(globalProgress)
+    }
 }
