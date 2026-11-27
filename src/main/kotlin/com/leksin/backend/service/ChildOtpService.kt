@@ -31,8 +31,7 @@ class ChildOtpService(
     private val childOtpRepository: ChildOtpRepository,
     private val passwordEncoder: PasswordEncoder,
     private val emailSender: JavaMailSender,
-    @Value($$"${app.mail.from}")
-    private val senderAddress: String,
+    @Value($$"${app.mail.from}")  private val senderAddress: String,
     private val clock: Clock,
     private val jwtService: JwtService,
 ) {
@@ -41,10 +40,10 @@ class ChildOtpService(
     private val logger = LoggerFactory.getLogger(ChildOtpService::class.java)
 
     private companion object {
-        const val MAX_FAILED_ATTEMPTS = 5
-        const val OTP_EXPIRATION_PERIOD = 1L
+        const val MAX_FAILED_ATTEMPTS = 3
+        const val OTP_EXPIRATION_MINUTES = 1L
         const val MAX_OTP_REQUESTS = 3
-        val OTP_REQUEST_WINDOW: Duration = Duration.ofMinutes(5)
+        val OTP_REQUEST_WINDOW: Duration = Duration.ofMinutes(3)
     }
 
     @Transactional
@@ -64,12 +63,12 @@ class ChildOtpService(
             now,
         )?.usedAt = now
 
-        val code = "%04d".format(secureRandom.nextInt(10_000))
+        val code = "%06d".format(secureRandom.nextInt(1_000_000))
 
         val otp = ChildOtp(
             child = child,
             codeHash = passwordEncoder.encode(code)!!,
-            expiresAt = now.plus(Duration.ofMinutes(OTP_EXPIRATION_PERIOD)),
+            expiresAt = now.plus(Duration.ofMinutes(OTP_EXPIRATION_MINUTES)),
         )
 
         childOtpRepository.save(otp)
@@ -128,7 +127,7 @@ class ChildOtpService(
             from = senderAddress
             setTo(recipient)
             subject = "LEKSIN Child Login OTP"
-            text = "Your login code is $code.\nIt expires in $OTP_EXPIRATION_PERIOD minutes."
+            text = "Your login code is $code.\nIt expires in $OTP_EXPIRATION_MINUTES minutes."
         }
 
     private fun registerFailedAttempt(otp: ChildOtp, now: Instant) {
