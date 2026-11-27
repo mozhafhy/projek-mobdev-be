@@ -42,15 +42,15 @@ class GameServiceTest {
             progressRepository,
             modeProgressRepository,
         )
-        Mockito.\`when\`(childRepository.findById(child.id!!))
+        Mockito.`when`(childRepository.findById(child.id!!))
             .thenReturn(Optional.of(child))
-        Mockito.\`when\`(historyRepository.save(Mockito.any(GameHistory::class.java)))
+        Mockito.`when`(historyRepository.save(Mockito.any(GameHistory::class.java)))
             .thenAnswer { it.getArgument(0) }
-        Mockito.\`when\`(modeProgressRepository.save(Mockito.any(GameModeProgress::class.java)))
+        Mockito.`when`(modeProgressRepository.save(Mockito.any(GameModeProgress::class.java)))
             .thenAnswer { it.getArgument(0) }
-        Mockito.\`when\`(progressRepository.save(Mockito.any(GameProgress::class.java)))
+        Mockito.`when`(progressRepository.save(Mockito.any(GameProgress::class.java)))
             .thenAnswer { it.getArgument(0) }
-        Mockito.\`when\`(historyRepository.findBestStars(child.id!!, GameType.WORD_SCRAMBLE, 1))
+        Mockito.`when`(historyRepository.findBestStars(child.id!!, GameType.WORD_SCRAMBLE, 1))
             .thenReturn(0)
     }
 
@@ -75,7 +75,7 @@ class GameServiceTest {
 
     @Test
     fun replayingLevelOnlyAddsStarsAbovePreviousBest() {
-        Mockito.\`when\`(historyRepository.findBestStars(child.id!!, GameType.WORD_SCRAMBLE, 1))
+        Mockito.`when`(historyRepository.findBestStars(child.id!!, GameType.WORD_SCRAMBLE, 1))
             .thenReturn(2)
         val modeProgress = GameModeProgress(
             child = child,
@@ -91,10 +91,10 @@ class GameServiceTest {
             longestStreak = 1,
             lastActivityDate = LocalDate.now(ZoneId.of("Asia/Jakarta")),
         )
-        Mockito.\`when\`(
+        Mockito.`when`(
             modeProgressRepository.findByChildIdAndGameType(child.id!!, GameType.WORD_SCRAMBLE)
         ).thenReturn(modeProgress)
-        Mockito.\`when\`(progressRepository.findByChildId(child.id!!)).thenReturn(globalProgress)
+        Mockito.`when`(progressRepository.findByChildId(child.id!!)).thenReturn(globalProgress)
 
         service.recordSession(child.id!!, request())
 
@@ -104,7 +104,7 @@ class GameServiceTest {
 
     @Test
     fun gameModesUseSeparateBestScoresAndProgress() {
-        Mockito.\`when\`(historyRepository.findBestStars(child.id!!, GameType.HANDWRITING, 1))
+        Mockito.`when`(historyRepository.findBestStars(child.id!!, GameType.HANDWRITING, 1))
             .thenReturn(0)
 
         service.recordSession(child.id!!, request(GameType.HANDWRITING, 3))
@@ -144,7 +144,7 @@ class GameServiceTest {
     @Test
     fun historyCanBeFilteredByGameType() {
         Mockito.`when`(childRepository.existsById(child.id!!)).thenReturn(true)
-        Mockito.\`when\`(
+        Mockito.`when`(
             historyRepository.findAllByChildIdAndGameTypeOrderByPlayedAtDesc(
                 child.id!!,
                 GameType.HANDWRITING,
@@ -162,15 +162,15 @@ class GameServiceTest {
 
     @Test
     fun missingChildCannotReadProgress() {
-        Mockito.\`when\`(childRepository.existsById(child.id!!)).thenReturn(false)
+        Mockito.`when`(childRepository.existsById(child.id!!)).thenReturn(false)
 
         assertThrows<ChildNotFoundException> { service.getProgress(child.id!!) }
     }
 
     @Test
     fun missingModeProgressReturnsZeroValues() {
-        Mockito.\`when\`(childRepository.existsById(child.id!!)).thenReturn(true)
-        Mockito.\`when\`(
+        Mockito.`when`(childRepository.existsById(child.id!!)).thenReturn(true)
+        Mockito.`when`(
             modeProgressRepository.findByChildIdAndGameType(child.id!!, GameType.HANDWRITING)
         ).thenReturn(null)
 
