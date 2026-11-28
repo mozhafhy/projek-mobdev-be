@@ -194,7 +194,7 @@ Response `200 OK`:
 }
 ```
 
-Respons sengaja tidak mengungkap apakah akun ditemukan. OTP dikirim ke email parent, berlaku 1 menit, dan maksimal 3 permintaan dalam 3 menit per child.
+Respons sengaja tidak mengungkap apakah akun ditemukan. OTP dikirim ke email parent, berlaku 2 menit, dengan batas 3 kode per 5 menit dan 10 kode per 24 jam per child. Saat batas tercapai, respons tetap sama tetapi tidak ada email baru; tampilkan cooldown generik di UI.
 
 ### Verifikasi OTP
 
@@ -303,6 +303,7 @@ Setelah menerima `204`, hapus token dari penyimpanan lokal dan arahkan pengguna 
 | `403` | Role atau kepemilikan resource tidak sesuai | Tampilkan akses ditolak |
 | `404` | Parent/child tidak ditemukan | Perbarui data lokal |
 | `409` | Username/nickname duplikat | Minta input lain |
+| `429` | Batas request per IP terlampaui | Tunggu sebelum mencoba lagi |
 | `500` | Kesalahan server | Tampilkan pesan umum dan catat request ID bila kelak tersedia |
 
 Error menggunakan `ProblemDetail` Spring. Bentuk umum:
@@ -462,6 +463,7 @@ Tambahkan endpoint lain sesuai kebutuhan aplikasi. Pasang OkHttp interceptor unt
 - Logout server-side tersedia dan mencabut JWT yang sedang dipakai. Tidak ada refresh token.
 - Belum ada pagination untuk riwayat permainan.
 - Belum ada idempotency key untuk pencatatan sesi. Hindari retry otomatis POST sesi setelah timeout karena dapat membuat duplikasi.
-- OTP berlaku 1 menit, maksimal 3 permintaan dalam 10 menit per child, dan maksimal 3 percobaan verifikasi per OTP.
+- OTP berlaku 2 menit, maksimal 3 kode per 5 menit dan 10 kode per 24 jam per akun, serta maksimal 3 percobaan verifikasi per OTP. Email dikirim secara asynchronous, sehingga respons sukses tidak menjamin email terkirim.
+- Register serta request/verify OTP dibatasi 20 request per 10 menit per IP untuk tiap endpoint.
 - Belum ada server-side verification atas OCR atau skor game.
 - Tidak ada upload foto tulisan. OCR/Tesseract berjalan di perangkat Android sesuai rancangan MVP.

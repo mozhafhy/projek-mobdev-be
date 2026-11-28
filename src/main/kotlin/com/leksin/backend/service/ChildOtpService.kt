@@ -7,6 +7,7 @@ import com.leksin.backend.entity.ChildOtp
 import com.leksin.backend.entity.Children
 import com.leksin.backend.entity.Role
 import com.leksin.backend.exception.InvalidOtpException
+import com.leksin.backend.otp.OtpEmailRequested
 import com.leksin.backend.otp.OtpEncoder
 import com.leksin.backend.otp.OtpGenerator
 import com.leksin.backend.otp.OtpPolicy
@@ -14,6 +15,7 @@ import com.leksin.backend.otp.OtpSupport
 import com.leksin.backend.repository.ChildOtpRepository
 import com.leksin.backend.repository.ChildRepository
 import com.leksin.backend.security.JwtService
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Clock
@@ -28,6 +30,7 @@ class ChildOtpService(
     private val otpPolicy: OtpPolicy,
     private val otpSupport: OtpSupport,
     private val clock: Clock,
+    private val eventPublisher: ApplicationEventPublisher,
     private val jwtService: JwtService,
 ) {
 
@@ -41,12 +44,13 @@ class ChildOtpService(
         val childId = child.id!!
         val now = clock.instant()
 
-        otpSupport.hasExceededRequestLimit(now) { windowStart ->
+        val isRequestLimitReached = otpSupport.hasReachedRequestLimit(now) { windowStart ->
             childOtpRepository.countByChildIdAndCreatedAtAfter(
                 childId,
                 windowStart,
             )
         }
+        if (isRequestLimitReached) return
 
         childOtpRepository.findLatestValidByChildId(
             childId,
@@ -59,17 +63,20 @@ class ChildOtpService(
             child = child,
             codeHash = otpEncoder.encode(code),
             expiresAt = now.plus(otpPolicy.expiration),
+            createdAt = now,
         )
 
         childOtpRepository.save(otp)
 
-        otpSupport.sendOtpEmail(
-            recipient = child.parent.email,
-            subject = "LEKSIN Child Login OTP",
-            text = """
-                Your login code is $code.
-                It expires in ${otpSupport.expirationMinutes} minutes.
-            """.trimIndent(),
+        eventPublisher.publishEvent(
+            OtpEmailRequested(
+                recipient = child.parent.email,
+                subject = "LEKSIN Child Login OTP",
+                text = """
+                    Your login code is $code.
+                    It expires in ${otpSupport.expirationMinutes} minutes.
+                """.trimIndent(),
+            )
         )
     }
 
@@ -104,6 +111,5 @@ class ChildOtpService(
     }
 
     private fun findAndLockChild(parentUsername: String, nickname: String): Children? =
-        childRepository.findByNicknameAndParentUsername(nickname, parentUsername)
-            ?.also { childRepository.lockById(it.id!!) }
+        childRepository.findByNicknameAndParentUsernameForUpdate(nickname, parentUsername)
 }

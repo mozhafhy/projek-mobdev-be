@@ -42,7 +42,7 @@ class ParentController(
             ApiResponse(responseCode = "201", description = "Parent account created. Email verification is pending."),
             ApiResponse(responseCode = "400", description = "Request validation failed."),
             ApiResponse(responseCode = "409", description = "Username or email is already registered."),
-            ApiResponse(responseCode = "500", description = "The verification email could not be sent."),
+            ApiResponse(responseCode = "429", description = "Too many requests from this IP address."),
         ]
     )
     fun register(
@@ -114,7 +114,6 @@ class ParentController(
             ApiResponse(responseCode = "403", description = "The authenticated account is not a parent."),
             ApiResponse(responseCode = "404", description = "Parent profile does not exist."),
             ApiResponse(responseCode = "409", description = "Username or email is already used by another account."),
-            ApiResponse(responseCode = "500", description = "The verification email could not be sent after an email change."),
         ]
     )
     fun updateProfile(

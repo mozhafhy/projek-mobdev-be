@@ -16,9 +16,17 @@ interface ChildRepository : JpaRepository<Children, UUID> {
         parentId: UUID,
     ): Children?
 
-    fun findByNicknameAndParentUsername(
-        nickname: String,
-        parentUsername: String,
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query(
+        """
+        select c from Children c
+        where c.nickname = :nickname
+          and c.parent.username = :parentUsername
+        """
+    )
+    fun findByNicknameAndParentUsernameForUpdate(
+        @Param("nickname") nickname: String,
+        @Param("parentUsername") parentUsername: String,
     ): Children?
 
     fun existsByNicknameAndParentUsername(

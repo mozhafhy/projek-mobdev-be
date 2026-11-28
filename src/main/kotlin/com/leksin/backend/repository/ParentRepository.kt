@@ -22,10 +22,16 @@ interface ParentRepository : JpaRepository<Parent, UUID> {
     ): Boolean
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select parent from Parent parent where parent.id = :id")
+    fun findByIdForUpdate(
+        @Param("id") id: UUID,
+    ): Parent?
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query(
         "select parent from Parent parent where parent.username = :username"
     )
     fun findByUsernameForUpdate(
         @Param("username") username: String,
     ): Parent?
-}
+}

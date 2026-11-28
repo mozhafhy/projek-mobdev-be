@@ -4,12 +4,14 @@ import com.leksin.backend.dto.request.ParentOtpVerifyRequest
 import com.leksin.backend.entity.Parent
 import com.leksin.backend.entity.ParentOtp
 import com.leksin.backend.exception.InvalidOtpException
+import com.leksin.backend.otp.OtpEmailRequested
 import com.leksin.backend.otp.OtpEncoder
 import com.leksin.backend.otp.OtpGenerator
 import com.leksin.backend.otp.OtpPolicy
 import com.leksin.backend.otp.OtpSupport
 import com.leksin.backend.repository.ParentOtpRepository
 import com.leksin.backend.repository.ParentRepository
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Clock
@@ -24,6 +26,7 @@ class ParentOtpService(
     private val otpPolicy: OtpPolicy,
     private val otpSupport: OtpSupport,
     private val clock: Clock,
+    private val eventPublisher: ApplicationEventPublisher,
 ) {
 
     @Transactional
@@ -31,17 +34,15 @@ class ParentOtpService(
         val parentId = parent.id ?: return
         val now = clock.instant()
 
-        otpSupport.hasExceededRequestLimit(now) { windowStart ->
+        val isRequestLimitReached = otpSupport.hasReachedRequestLimit(now) { windowStart ->
             parentOtpRepository.countByParentIdAndCreatedAtAfter(
                 parentId,
                 windowStart,
             )
         }
+        if (isRequestLimitReached) return
 
-        parentOtpRepository.findLatestValidByParentId(
-            parentId,
-            now,
-        )?.usedAt = now
+        invalidateActiveOtp(parent)
 
         val code = otpGenerator.generate()
 
@@ -54,16 +55,29 @@ class ParentOtpService(
             )
         )
 
-        otpSupport.sendOtpEmail(
-            recipient = parent.email,
-            subject = "LEKSIN Email Verification",
-            text = """
-                Your LEKSIN verification code is $code.
+        eventPublisher.publishEvent(
+            OtpEmailRequested(
+                recipient = parent.email,
+                subject = "LEKSIN Email Verification",
+                text = """
+                    Your LEKSIN verification code is $code.
         
-                This code expires in ${otpSupport.expirationMinutes} minutes.
-                Do not share this code with anyone.
-            """.trimIndent(),
+                    This code expires in ${otpSupport.expirationMinutes} minutes.
+                    Do not share this code with anyone.
+                """.trimIndent(),
+            )
         )
+    }
+
+    @Transactional
+    fun invalidateActiveOtp(parent: Parent) {
+        val parentId = parent.id ?: return
+        val now = clock.instant()
+
+        parentOtpRepository.findLatestValidByParentId(
+            parentId,
+            now,
+        )?.usedAt = now
     }
 
     @Transactional

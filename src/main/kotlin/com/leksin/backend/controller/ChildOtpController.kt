@@ -32,7 +32,7 @@ class ChildOtpController(
         value = [
             ApiResponse(responseCode = "200", description = "Request processed. A generic message is returned."),
             ApiResponse(responseCode = "400", description = "Request validation failed."),
-            ApiResponse(responseCode = "500", description = "The OTP email could not be sent."),
+            ApiResponse(responseCode = "429", description = "Too many requests from this IP address."),
         ]
     )
     fun requestOtp(
@@ -53,6 +53,7 @@ class ChildOtpController(
         value = [
             ApiResponse(responseCode = "200", description = "OTP verified. Child authentication token returned."),
             ApiResponse(responseCode = "400", description = "Request validation failed. The code must contain exactly six digits."),
+            ApiResponse(responseCode = "429", description = "Too many requests from this IP address."),
             ApiResponse(responseCode = "401", description = "Child identity or OTP is invalid, expired, already used, or has exceeded the failed-attempt limit."),
         ]
     )

@@ -99,8 +99,8 @@ class ParentService(
         parentId: UUID,
         request: ParentProfileUpdateRequest,
     ): ParentResponse {
-        val parent = parentRepository.findById(parentId)
-            .orElseThrow { ParentNotFoundException() }
+        val parent = parentRepository.findByIdForUpdate(parentId)
+            ?: throw ParentNotFoundException()
 
         request.username?.let {
             changeUsername(parent, parentId, it)
@@ -142,6 +142,7 @@ class ParentService(
         parent.email = normalizedEmail
         parent.emailVerified = false
 
+        parentOtpService.invalidateActiveOtp(parent)
         parentOtpService.sendVerificationOtp(parent)
     }
-}
+}

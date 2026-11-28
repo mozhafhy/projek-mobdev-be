@@ -79,6 +79,7 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
         is ChildNotFoundException          -> HttpStatus.NOT_FOUND
         is InvalidCredentialException      -> HttpStatus.UNAUTHORIZED
         is InvalidOtpException             -> HttpStatus.UNAUTHORIZED
+        is TooManyRequestsException        -> HttpStatus.TOO_MANY_REQUESTS
     }
 
     private fun problem(
