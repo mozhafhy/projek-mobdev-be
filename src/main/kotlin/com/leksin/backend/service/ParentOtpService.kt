@@ -10,7 +10,6 @@ import com.leksin.backend.otp.OtpPolicy
 import com.leksin.backend.otp.OtpSupport
 import com.leksin.backend.repository.ParentOtpRepository
 import com.leksin.backend.repository.ParentRepository
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Clock
@@ -24,7 +23,6 @@ class ParentOtpService(
     private val otpEncoder: OtpEncoder,
     private val otpPolicy: OtpPolicy,
     private val otpSupport: OtpSupport,
-    @Value($$"${app.mail.from}")
     private val clock: Clock,
 ) {
 
