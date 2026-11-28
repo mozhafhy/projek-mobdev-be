@@ -3,7 +3,7 @@ package com.leksin.backend.controller
 import com.leksin.backend.dto.response.AuthResponse
 import com.leksin.backend.dto.request.ChildOtpRequest
 import com.leksin.backend.dto.request.ChildOtpVerifyRequest
-import com.leksin.backend.dto.response.MessageResponse
+import com.leksin.backend.dto.response.OtpMessageResponse
 import com.leksin.backend.service.ChildOtpService
 import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
@@ -21,10 +21,10 @@ class ChildOtpController(
     @PostMapping("/request-otp")
     fun requestOtp(
         @Valid @RequestBody request: ChildOtpRequest,
-    ): ResponseEntity<MessageResponse> {
+    ): ResponseEntity<OtpMessageResponse> {
         childOtpService.requestOtp(request)
         return ResponseEntity.ok(
-            MessageResponse("If the account exists, an OTP has been sent")
+            OtpMessageResponse("If the account exists, an OTP has been sent")
         )
     }
 

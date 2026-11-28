@@ -1,12 +1,16 @@
 package com.leksin.backend.service
 
-import com.leksin.backend.dto.response.AuthResponse
 import com.leksin.backend.dto.request.ChildOtpRequest
 import com.leksin.backend.dto.request.ChildOtpVerifyRequest
+import com.leksin.backend.dto.response.AuthResponse
 import com.leksin.backend.entity.ChildOtp
 import com.leksin.backend.entity.Children
 import com.leksin.backend.entity.Role
 import com.leksin.backend.exception.InvalidOtpException
+import com.leksin.backend.otp.OtpEncoder
+import com.leksin.backend.otp.OtpGenerator
+import com.leksin.backend.otp.OtpPolicy
+import com.leksin.backend.otp.OtpSupport
 import com.leksin.backend.repository.ChildOtpRepository
 import com.leksin.backend.repository.ChildRepository
 import com.leksin.backend.security.JwtService
@@ -15,36 +19,28 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.mail.MailException
 import org.springframework.mail.SimpleMailMessage
 import org.springframework.mail.javamail.JavaMailSender
-import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.security.SecureRandom
 import java.time.Clock
-import java.time.Duration
 import java.time.Instant
-import java.util.UUID
+import java.util.*
 
 @Service
 @Transactional(readOnly = true)
 class ChildOtpService(
     private val childRepository: ChildRepository,
     private val childOtpRepository: ChildOtpRepository,
-    private val passwordEncoder: PasswordEncoder,
+    private val otpGenerator: OtpGenerator,
+    private val otpEncoder: OtpEncoder,
     private val emailSender: JavaMailSender,
-    @Value($$"${app.mail.from}")  private val senderAddress: String,
+    private val otpPolicy: OtpPolicy,
+    private val otpSupport: OtpSupport,
+    @Value($$"${app.mail.from}") private val senderAddress: String,
     private val clock: Clock,
     private val jwtService: JwtService,
 ) {
 
-    private val secureRandom = SecureRandom()
     private val logger = LoggerFactory.getLogger(ChildOtpService::class.java)
-
-    private companion object {
-        const val MAX_FAILED_ATTEMPTS = 3
-        const val OTP_EXPIRATION_MINUTES = 1L
-        const val MAX_OTP_REQUESTS = 3
-        val OTP_REQUEST_WINDOW: Duration = Duration.ofMinutes(3)
-    }
 
     @Transactional
     fun requestOtp(request: ChildOtpRequest) {
@@ -56,26 +52,35 @@ class ChildOtpService(
         val childId = child.id!!
         val now = clock.instant()
 
-        if (hasExceededRequestLimit(childId, now)) return
+        otpSupport.hasExceededRequestLimit(now) { windowStart ->
+            childOtpRepository.countByChildIdAndCreatedAtAfter(
+                childId,
+                windowStart,
+            )
+        }
 
         childOtpRepository.findLatestValidByChildId(
             childId,
             now,
         )?.usedAt = now
 
-        val code = "%06d".format(secureRandom.nextInt(1_000_000))
+        val code = otpGenerator.generate()
 
         val otp = ChildOtp(
             child = child,
-            codeHash = passwordEncoder.encode(code)!!,
-            expiresAt = now.plus(Duration.ofMinutes(OTP_EXPIRATION_MINUTES)),
+            codeHash = otpEncoder.encode(code),
+            expiresAt = now.plus(otpPolicy.expiration),
         )
 
         childOtpRepository.save(otp)
 
-        sendOtpEmail(
+        otpSupport.sendOtpEmail(
             recipient = child.parent.email,
-            code = code,
+            subject = "LEKSIN Child Login OTP",
+            text = """
+                Your login code is $code.
+                It expires in ${otpSupport.expirationMinutes} minutes.
+            """.trimIndent(),
         )
     }
 
@@ -91,8 +96,8 @@ class ChildOtpService(
 
         val otp = childOtpRepository.findLatestValidByChildId(childId, now) ?: throw InvalidOtpException()
 
-        if (!passwordEncoder.matches(request.code, otp.codeHash)) {
-            registerFailedAttempt(otp, now)
+        if (!otpEncoder.matches(request.code, otp.codeHash)) {
+            otpSupport.registerFailedAttempt(otp, now)
             throw InvalidOtpException()
         }
 
@@ -112,34 +117,4 @@ class ChildOtpService(
     private fun findAndLockChild(parentUsername: String, nickname: String): Children? =
         childRepository.findByNicknameAndParentUsername(nickname, parentUsername)
             ?.also { childRepository.lockById(it.id!!) }
-
-    private fun sendOtpEmail(recipient: String, code: String) {
-        try {
-            emailSender.send(buildOtpEmail(recipient, code))
-        } catch (e: MailException) {
-            logger.error("Gagal mengirim email OTP: ${e.message} | sender: $senderAddress")
-            throw e
-        }
-    }
-
-    private fun buildOtpEmail(recipient: String, code: String) =
-        SimpleMailMessage().apply {
-            from = senderAddress
-            setTo(recipient)
-            subject = "LEKSIN Child Login OTP"
-            text = "Your login code is $code.\nIt expires in $OTP_EXPIRATION_MINUTES minutes."
-        }
-
-    private fun registerFailedAttempt(otp: ChildOtp, now: Instant) {
-        otp.failedAttempts++
-        if (otp.failedAttempts >= MAX_FAILED_ATTEMPTS) {
-            otp.usedAt = now
-        }
-    }
-
-    private fun hasExceededRequestLimit(childId: UUID, now: Instant): Boolean =
-        childOtpRepository.countByChildIdAndCreatedAtAfter(
-            childId,
-            now.minus(OTP_REQUEST_WINDOW),
-        ) >= MAX_OTP_REQUESTS
 }

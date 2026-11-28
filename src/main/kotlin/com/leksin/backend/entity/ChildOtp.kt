@@ -1,5 +1,6 @@
 package com.leksin.backend.entity
 
+import com.leksin.backend.otp.OtpAttempt
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.FetchType
@@ -32,8 +33,8 @@ class ChildOtp(
     @Column(nullable = false)
     var createdAt: Instant = Instant.now(),
 
-    var usedAt: Instant? = null,
+) : OtpAttempt {
 
-    var failedAttempts: Int = 0,
-
-)
+    override var failedAttempts: Int = 0
+    override var usedAt: Instant? = null
+}
