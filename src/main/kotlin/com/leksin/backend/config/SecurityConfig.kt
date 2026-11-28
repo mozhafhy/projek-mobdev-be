@@ -38,6 +38,8 @@ class SecurityConfig {
                 it.requestMatchers(
                     "/api/parent/register",
                     "/api/parent/login",
+                    "/api/parent/auth/request-otp",
+                    "/api/parent/auth/verify-otp",
                     "/api/child/auth/request-otp",
                     "/api/child/auth/verify-otp",
                     "/actuator/health",

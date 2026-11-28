@@ -1,13 +1,14 @@
 package com.leksin.backend.service
 
-import com.leksin.backend.dto.response.AuthResponse
 import com.leksin.backend.dto.request.ParentLoginRequest
 import com.leksin.backend.dto.request.ParentProfileUpdateRequest
 import com.leksin.backend.dto.request.ParentRegisterRequest
+import com.leksin.backend.dto.response.AuthResponse
 import com.leksin.backend.dto.response.ParentResponse
 import com.leksin.backend.entity.Parent
 import com.leksin.backend.entity.Role
 import com.leksin.backend.entity.toParentResponse
+import com.leksin.backend.exception.DuplicateEmailException
 import com.leksin.backend.exception.DuplicateUsernameException
 import com.leksin.backend.exception.InvalidCredentialException
 import com.leksin.backend.exception.ParentNotFoundException
@@ -24,19 +25,32 @@ class ParentService(
     private val parentRepository: ParentRepository,
     private val passwordEncoder: PasswordEncoder,
     private val jwtService: JwtService,
+    private val parentOtpService: ParentOtpService,
 ) {
+
     @Transactional
     fun register(request: ParentRegisterRequest): ParentResponse {
-        if (parentRepository.existsByUsername(request.username)) {
+        val username = request.username.trim()
+        val email = request.email.trim().lowercase()
+
+        if (parentRepository.existsByUsername(username)) {
             throw DuplicateUsernameException()
         }
 
+        if (parentRepository.existsByEmail(email)) {
+            throw DuplicateEmailException()
+        }
+
         val parent = Parent(
-            username = request.username,
+            username = username,
             password = passwordEncoder.encode(request.password),
-            email = request.email,
+            email = email,
+            emailVerified = false,
         )
+
         val savedParent = parentRepository.save(parent)
+
+        parentOtpService.sendVerificationOtp(savedParent)
 
         return savedParent.toParentResponse()
     }
@@ -48,6 +62,12 @@ class ParentService(
             )
 
         if (!passwordEncoder.matches(request.password, parent.password)) {
+            throw InvalidCredentialException(
+                "Invalid username or password"
+            )
+        }
+
+        if (!parent.emailVerified) {
             throw InvalidCredentialException(
                 "Invalid username or password"
             )
@@ -82,17 +102,46 @@ class ParentService(
         val parent = parentRepository.findById(parentId)
             .orElseThrow { ParentNotFoundException() }
 
-        request.username?.let { changeUsername(parent, parentId, it) }
-        request.email?.let { parent.email = it }
+        request.username?.let {
+            changeUsername(parent, parentId, it)
+        }
+
+        request.email?.let {
+            changeEmail(parent, it)
+        }
 
         return parent.toParentResponse()
     }
 
-    private fun changeUsername(parent: Parent, parentId: UUID, username: String) {
+    private fun changeUsername(
+        parent: Parent,
+        parentId: UUID,
+        username: String,
+    ) {
         if (username == parent.username) return
+
         if (parentRepository.existsByUsernameAndIdNot(username, parentId)) {
             throw DuplicateUsernameException()
         }
+
         parent.username = username
+    }
+
+    private fun changeEmail(
+        parent: Parent,
+        email: String,
+    ) {
+        val normalizedEmail = email.trim().lowercase()
+
+        if (normalizedEmail == parent.email) return
+
+        if (parentRepository.existsByEmail(normalizedEmail)) {
+            throw DuplicateEmailException()
+        }
+
+        parent.email = normalizedEmail
+        parent.emailVerified = false
+
+        parentOtpService.sendVerificationOtp(parent)
     }
 }

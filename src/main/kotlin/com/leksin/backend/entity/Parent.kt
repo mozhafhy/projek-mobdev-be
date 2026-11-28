@@ -11,7 +11,7 @@ import java.util.UUID
 
 @Entity
 @Table(name = "parents")
-class Parent (
+class Parent(
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     var id: UUID? = null,
@@ -22,8 +22,15 @@ class Parent (
     @Column(nullable = false, length = 255)
     var password: String?,
 
-    @Column(nullable = false, length = 255)
+    @Column(nullable = false, unique = true, length = 255)
     var email: String,
+
+    @Column(
+        name = "email_verified",
+        nullable = false,
+        columnDefinition = "boolean default true",
+    )
+    var emailVerified: Boolean = true,
 )
 
 fun Parent.toParentResponse(): ParentResponse {

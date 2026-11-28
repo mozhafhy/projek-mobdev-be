@@ -73,6 +73,7 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
 
     private fun statusOf(e: DomainException): HttpStatus = when (e) {
         is DuplicateUsernameException      -> HttpStatus.CONFLICT
+        is DuplicateEmailException         -> HttpStatus.CONFLICT
         is DuplicateChildNicknameException -> HttpStatus.CONFLICT
         is ParentNotFoundException         -> HttpStatus.NOT_FOUND
         is ChildNotFoundException          -> HttpStatus.NOT_FOUND
