@@ -10,16 +10,10 @@ import com.leksin.backend.otp.OtpPolicy
 import com.leksin.backend.otp.OtpSupport
 import com.leksin.backend.repository.ParentOtpRepository
 import com.leksin.backend.repository.ParentRepository
-import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
-import org.springframework.mail.MailException
-import org.springframework.mail.SimpleMailMessage
-import org.springframework.mail.javamail.JavaMailSender
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Clock
-import java.time.Instant
-import java.util.*
 
 @Service
 @Transactional(readOnly = true)
@@ -28,15 +22,11 @@ class ParentOtpService(
     private val parentOtpRepository: ParentOtpRepository,
     private val otpGenerator: OtpGenerator,
     private val otpEncoder: OtpEncoder,
-    private val emailSender: JavaMailSender,
     private val otpPolicy: OtpPolicy,
     private val otpSupport: OtpSupport,
     @Value($$"${app.mail.from}")
-    private val senderAddress: String,
     private val clock: Clock,
 ) {
-
-    private val logger = LoggerFactory.getLogger(ParentOtpService::class.java)
 
     @Transactional
     fun sendVerificationOtp(parent: Parent) {
