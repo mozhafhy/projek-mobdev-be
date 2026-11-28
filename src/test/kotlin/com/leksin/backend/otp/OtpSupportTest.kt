@@ -85,50 +85,27 @@ class OtpSupportTest {
     // Request limit tests
 
     @Test
-    fun `hasExceededRequestLimit should return false below request limit`() {
-        var receivedWindowStart: Instant? = null
+    fun `hasReachedRequestLimit should return false below every limit`() {
+        assertFalse(hasReachedLimit(shortWindowCount = 2, dailyCount = 9))
+    }
 
-        val result = support.hasExceededRequestLimit(now) { windowStart ->
-            receivedWindowStart = windowStart
-            2L
-        }
+    @Test
+    fun `hasReachedRequestLimit should return true at short window limit`() {
+        assertTrue(hasReachedLimit(shortWindowCount = 3, dailyCount = 3))
+    }
 
-        assertFalse(result)
-        assertEquals(
-            now.minus(otpPolicy.requestWindow),
-            receivedWindowStart,
+    @Test
+    fun `hasReachedRequestLimit should return true at daily limit`() {
+        assertTrue(hasReachedLimit(shortWindowCount = 0, dailyCount = 10))
+    }
+
+    private fun hasReachedLimit(shortWindowCount: Long, dailyCount: Long): Boolean {
+        val countsByWindowStart = mapOf(
+            now.minusSeconds(5 * 60) to shortWindowCount,
+            now.minusSeconds(24 * 60 * 60) to dailyCount,
         )
-    }
 
-    @Test
-    fun `hasExceededRequestLimit should return true at request limit`() {
-        val result = support.hasExceededRequestLimit(now) {
-            3L
-        }
-
-        assertTrue(result)
-    }
-
-    @Test
-    fun `hasExceededRequestLimit should return true above request limit`() {
-        val result = support.hasExceededRequestLimit(now) {
-            4L
-        }
-
-        assertTrue(result)
-    }
-
-    @Test
-    fun `hasExceededRequestLimit should pass correct window start to callback`() {
-        val expectedWindowStart = now.minusSeconds(5 * 60)
-        var actualWindowStart: Instant? = null
-
-        support.hasExceededRequestLimit(now) { windowStart ->
-            actualWindowStart = windowStart
-            0L
-        }
-
-        assertEquals(expectedWindowStart, actualWindowStart)
+        return support.hasReachedRequestLimit(now) { countsByWindowStart.getValue(it) }
     }
 
     // Email tests

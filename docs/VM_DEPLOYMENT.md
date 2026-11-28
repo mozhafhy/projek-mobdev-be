@@ -242,6 +242,20 @@ Jangan expose port 5432 atau 8080 ke internet. Jangan menghapus volume PostgreSQ
 
 ### 4.1 Konfigurasi Nginx
 
+Backend membatasi request OTP per IP. Jika proxy Cloudflare aktif, Nginx harus memulihkan IP client. Tanpa langkah ini, banyak pengguna terhitung sebagai satu IP Cloudflare. Buat file berikut sebelum `nginx -t`, dan perbarui bila daftar IP Cloudflare berubah:
+
+```bash
+sudo mkdir -p /etc/nginx/leksin-realip
+{
+  for list in ips-v4 ips-v6; do
+    curl -fsS "https://www.cloudflare.com/$list" | sed '/^$/d; s/.*/set_real_ip_from &;/'
+    echo
+  done
+  echo "real_ip_header CF-Connecting-IP;"
+} | sed '/^$/d' | sudo tee /etc/nginx/leksin-realip/cloudflare.conf
+```
+
+
 Pastikan DNS domain sudah mengarah ke VM dan port 80 dapat dijangkau dari internet. Buat webroot untuk validasi Let's Encrypt:
 
 ```bash

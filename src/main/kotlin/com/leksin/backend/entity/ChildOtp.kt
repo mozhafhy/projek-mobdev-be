@@ -31,7 +31,7 @@ class ChildOtp(
     var expiresAt: Instant,
 
     @Column(nullable = false)
-    var createdAt: Instant = Instant.now(),
+    var createdAt: Instant,
 
 ) : OtpAttempt {
 

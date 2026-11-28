@@ -27,14 +27,13 @@ class OtpSupport(
         }
     }
 
-    fun hasExceededRequestLimit(
+    fun hasReachedRequestLimit(
         now: Instant,
         countRequestsSince: (Instant) -> Long,
-    ): Boolean {
-        val windowStart = now.minus(otpPolicy.requestWindow)
-
-        return countRequestsSince(windowStart) >= otpPolicy.maxRequests
-    }
+    ): Boolean =
+        otpPolicy.requestLimits.any { limit ->
+            countRequestsSince(now.minus(limit.window)) >= limit.maxRequests
+        }
 
     fun sendOtpEmail(
         recipient: String,

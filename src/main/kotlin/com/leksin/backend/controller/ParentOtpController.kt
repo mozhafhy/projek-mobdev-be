@@ -53,8 +53,8 @@ class ParentOtpController(
                 description = "Request validation failed."
             ),
             ApiResponse(
-                responseCode = "500",
-                description = "The verification email could not be sent."
+                responseCode = "429",
+                description = "Too many requests from this IP address."
             )
         ]
     )
@@ -94,6 +94,10 @@ class ParentOtpController(
             ApiResponse(
                 responseCode = "400",
                 description = "Request validation failed. The code must contain exactly 6 digits."
+            ),
+            ApiResponse(
+                responseCode = "429",
+                description = "Too many requests from this IP address."
             ),
             ApiResponse(
                 responseCode = "401",
