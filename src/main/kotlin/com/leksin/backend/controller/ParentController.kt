@@ -8,6 +8,9 @@ import com.leksin.backend.dto.response.ParentResponse
 import com.leksin.backend.security.ResourceAuthorizationService
 import com.leksin.backend.security.TokenPrincipal
 import com.leksin.backend.service.ParentService
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.responses.ApiResponse
+import io.swagger.v3.oas.annotations.responses.ApiResponses
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -26,6 +29,22 @@ class ParentController(
 
     @PostMapping("/register")
     @ResponseStatus(HttpStatus.CREATED)
+    @Operation(
+        summary = "Register parent account",
+        description = """
+            Creates a parent account and automatically sends an email verification
+            OTP to the registered email address. The account cannot log in until
+            the email address has been verified through POST /api/parent/auth/verify-otp.
+        """
+    )
+    @ApiResponses(
+        value = [
+            ApiResponse(responseCode = "201", description = "Parent account created. Email verification is pending."),
+            ApiResponse(responseCode = "400", description = "Request validation failed."),
+            ApiResponse(responseCode = "409", description = "Username or email is already registered."),
+            ApiResponse(responseCode = "500", description = "The verification email could not be sent.")
+        ]
+    )
     fun register(
         @Valid @RequestBody request: ParentRegisterRequest,
     ): ResponseEntity<ParentResponse> {
@@ -34,6 +53,20 @@ class ParentController(
     }
 
     @PostMapping("/login")
+    @Operation(
+        summary = "Log in as parent",
+        description = """
+            Authenticates a parent account and returns a JWT access token.
+            The parent must complete email verification before login.
+        """
+    )
+    @ApiResponses(
+        value = [
+            ApiResponse(responseCode = "200", description = "Login successful."),
+            ApiResponse(responseCode = "400", description = "Request validation failed."),
+            ApiResponse(responseCode = "401", description = "Credentials are invalid or the email address has not been verified.")
+        ]
+    )
     fun login(
         @Valid @RequestBody request: ParentLoginRequest,
     ): ResponseEntity<AuthResponse> {
